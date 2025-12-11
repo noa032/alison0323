@@ -1,0 +1,2168 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1c1c1e">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="apple-touch-icon" href="https://i.pravatar.cc/150?img=11"> <title>Mizuiro OS - Final</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <style>
+        :root {
+            /* 統一安全區域變數 */
+            --safe-top: max(44px, env(safe-area-inset-top));
+            --safe-bottom: max(34px, env(safe-area-inset-bottom));
+            
+            --primary: #55d0ff; 
+            --wx-green: var(--primary);
+            --bg-color: #000;
+            --card-bg: #1c1c1e;
+            --text-main: #fff;
+            --text-sub: #888;
+            --border: #333;
+            --input-bg: #333;
+            --wx-bg: #111;
+            --wx-card: #1c1c1e;
+            --msg-me: var(--primary);
+            --msg-other: #2c2c2e;
+        }
+
+        body.light-mode {
+            --bg-color: #f2f2f7; --card-bg: #fff; --text-main: #000; --text-sub: #666;
+            --border: #e5e5ea; --input-bg: #f0f0f6; --wx-bg: #ededed; --wx-card: #fff;
+            --msg-me: var(--primary); --msg-other: #fff;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; outline: none; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        
+        body {
+            margin: 0; height: 100vh; width: 100vw; background: #333;
+            display: flex; justify-content: center; align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Phone Scaler */
+        #phone-scaler {
+            transform-origin: center center;
+            transition: transform 0.2s;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .phone-body {
+            width: 375px; height: 812px;
+            background-color: #000;
+            border-radius: 0;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column;
+            position: relative; overflow: hidden;
+            border: 1px solid #222; 
+        }
+
+        .screen {
+            width: 100%; height: 100%; background: #222; position: relative; overflow: hidden;
+            background-size: cover; background-position: center;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: var(--safe-top); 
+            width: 100%; display: flex; justify-content: space-between; align-items: flex-end;
+            padding: 0 20px 8px; font-size: 14px; color: #fff; font-weight: 600;
+            position: absolute; top: 0; left: 0; z-index: 3000;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            cursor: pointer;
+        }
+        .api-status { font-size: 10px; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 10px; transition: 0.3s; }
+        .api-status.error { background: rgba(255, 59, 48, 0.4); border: 1px solid #ff3b30; }
+        .api-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; transition: background 0.3s; }
+        .api-dot.on { background: #34c759; }
+
+        .home-indicator-area { 
+            position: absolute; bottom: 0; left: 0; width: 100%; 
+            height: var(--safe-bottom); 
+            z-index: 9999; display: flex; justify-content: center; align-items: flex-end; 
+            padding-bottom: 8px;
+            cursor: pointer; pointer-events: auto;
+        }
+        .home-indicator { 
+            width: 130px; height: 5px; background: #fff; border-radius: 10px; 
+            opacity: 0.6; transition: 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+        }
+        .home-indicator-area:active .home-indicator { background: var(--primary); transform: scale(0.95); opacity: 1; }
+
+        .app-view {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); color: var(--text-main);
+            transform: scale(0.95); opacity: 0; pointer-events: none;
+            transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column; z-index: 20; 
+            padding-bottom: 0; 
+        }
+        .app-view.active { transform: scale(1); opacity: 1; pointer-events: auto; }
+
+        #home-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; padding-top: 60px; }
+        .icon-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px 20px; padding: 25px; }
+        .app-icon-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+        .app-icon-wrap:active { opacity: 0.7; transform: scale(0.95); }
+        .app-icon { width: 68px; height: 68px; border-radius: 16px; display: flex; justify-content: center; align-items: center; font-size: 34px; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: background 0.3s;}
+        .app-label { color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); font-weight: 500;}
+
+        /* Header */
+        .header { 
+            height: calc(50px + var(--safe-top)); 
+            padding-top: var(--safe-top); 
+            flex-shrink: 0; display: flex; align-items: center; justify-content: center; 
+            background: var(--card-bg); backdrop-filter: blur(10px); color: var(--text-main);
+            border-bottom: 1px solid var(--border); font-weight: 600; font-size: 17px; position: relative; z-index: 10;
+        }
+        .header-btn { position: absolute; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 46px; bottom: 0; padding: 0 15px; color: var(--primary); font-size: 16px; z-index: 20;}
+        .header-btn.left { left: 0; }
+        .header-btn.right { right: 0; }
+        .header-av { width: 32px; height: 32px; border-radius: 50%; background: #ccc; background-size: cover; border: 1px solid #ddd; }
+        
+        /* Music Tabs */
+        .music-tabs { 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: calc(60px + var(--safe-bottom));
+            display: flex; background: var(--card-bg); border-top: 1px solid var(--border); 
+            backdrop-filter: blur(10px); z-index: 40; 
+            padding-bottom: var(--safe-bottom);
+        }
+        .m-tab { flex: 1; text-align: center; padding: 8px; font-size: 10px; color: var(--text-sub); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+        .m-tab.active { color: var(--primary); }
+        .m-tab i { font-size: 28px; margin-bottom: 2px; }
+        
+        .m-content { flex: 1; display: none; overflow-y: auto; flex-direction: column; background: var(--bg-color); padding-bottom: 140px; }
+        .m-content.active { display: flex; }
+
+        .playlist-actions { display: flex; gap: 10px; padding: 10px 15px; background: var(--card-bg); border-bottom: 1px solid var(--border); }
+        .pl-btn { flex: 1; padding: 10px; border-radius: 10px; text-align: center; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
+        .pl-btn-play { background: rgba(85, 208, 255, 0.15); color: var(--primary); }
+        .pl-btn-shuffle { background: var(--bg-color); color: var(--text-sub); border: 1px solid var(--border); }
+        .pl-btn:active { transform: scale(0.97); }
+
+        .song-item { display: flex; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .song-item:active { background: rgba(128,128,128,0.1); }
+        .song-item.active-song .s-title { color: var(--primary); font-weight: bold; }
+        .s-cover { width: 50px; height: 50px; background: #eee; border-radius: 8px; margin-right: 12px; background-size: cover; flex-shrink: 0; position: relative; }
+        .s-badge { position: absolute; bottom: 0; right: 0; background: red; color: white; font-size: 8px; padding: 2px 4px; border-radius: 4px; }
+        
+        .s-info { flex: 1; overflow: hidden; }
+        .s-title { font-size: 16px; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .s-artist { font-size: 12px; color: var(--text-sub); }
+        .s-right-actions { display: flex; align-items: center; gap: 15px; }
+        
+        .pop-anim { animation: popHeart 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .s-fav-btn { color: var(--text-sub); font-size: 18px; transition: 0.2s; }
+        .s-fav-btn.active { color: var(--primary); }
+        @keyframes popHeart { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
+
+        .mini-player {
+            position: absolute; bottom: calc(65px + var(--safe-bottom)); left: 10px; right: 10px; height: 56px;
+            background: var(--card-bg); backdrop-filter: blur(20px);
+            border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            display: flex; align-items: center; padding: 0 12px; z-index: 39;
+            transform: translateY(200%); transition: transform 0.4s; border: 1px solid var(--border);
+        }
+        .mini-player.show { transform: translateY(0); }
+
+        .full-player-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #222; background-size: cover; background-position: center;
+            z-index: 50; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.3, 1, 0.3, 1);
+            display: flex; flex-direction: column;
+        }
+        .full-player-overlay.show { transform: translateY(0); }
+        .fp-bg-mask { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:-1; backdrop-filter: blur(20px); transition: background 0.3s;}
+        
+        .fp-header { height: 60px; display: flex; align-items: center; justify-content: center; position: relative; margin-top: max(40px, var(--safe-top)); color: #fff;}
+        .fp-back-btn { position: absolute; left: 20px; color: #fff; font-size: 24px; cursor: pointer; }
+
+        .together-pill {
+            background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px;
+            display: flex; align-items: center; gap: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .tp-avatars { display: flex; width: 40px; position: relative; height: 20px; }
+        .tp-av { width: 20px; height: 20px; border-radius: 50%; border: 1px solid #222; background-size: cover; position: absolute; }
+        .tp-av.char { left: 0; z-index: 2; }
+        .tp-av.me { right: 0; z-index: 1; opacity: 0.8; }
+        .tp-text { font-size: 12px; color: #ddd; }
+
+        .player-scroll-view { flex: 1; overflow-y: auto; scroll-behavior: smooth; display: flex; flex-direction: column; padding-bottom: 40px; }
+        .vinyl-container { width: 280px; height: 280px; margin: 20px auto 40px; position: relative; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+        .vinyl-disk { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(#111 50%, #222 51%, #111 52%, #222 53%, #111 60%); border: 8px solid #121212; animation: rotate 20s linear infinite; animation-play-state: paused; display: flex; justify-content: center; align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .vinyl-disk.playing { animation-play-state: running; }
+        .vinyl-cover { width: 180px; height: 180px; border-radius: 50%; background-size: cover; background-position: center; border: 4px solid #111; position: relative; }
+
+        .together-area { flex: 1; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; min-height: 400px; }
+        .chat-couple-header { display: flex; justify-content: center; align-items: center; padding: 15px; }
+        .c-av-wrap { position: relative; width: 80px; height: 50px; }
+        .c-av { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #000; background-size: cover; position: absolute; top: 0; }
+        .c-av.left { left: 0; z-index: 2; border-color: var(--primary); }
+        .c-av.right { right: 0; z-index: 1; opacity: 0.8; }
+        .c-heart { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); color: var(--primary); font-size: 12px; background: #000; padding: 2px 6px; border-radius: 10px; z-index: 3;}
+
+        .mc-box { flex: 1; display: flex; flex-direction: column; padding: 10px; overflow: hidden; }
+        .mc-hist { flex: 1; overflow-y: auto; padding-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .mc-bubble { background: rgba(255,255,255,0.2); color: #fff; padding: 8px 12px; border-radius: 12px; max-width: 80%; width: fit-content; font-size: 14px; word-wrap: break-word;}
+        .mc-bubble.me { background: var(--primary); color: #000; align-self: flex-end; }
+        .mc-input-area { padding: 10px; display: flex; gap: 10px; background: rgba(0,0,0,0.2); padding-bottom: max(10px, var(--safe-bottom)); }
+        
+        .mc-send-btn { 
+            width: 40px; height: 36px; display: flex; align-items: center; justify-content: center; 
+            color: var(--primary); cursor: pointer; background: transparent; border-radius: 8px; 
+            transition: 0.2s; font-size: 20px;
+        }
+        .mc-send-btn:active { transform: scale(0.9); opacity: 0.7; }
+
+        /* Req 1: Music Typing Indicator */
+        .mc-typing {
+            font-size: 12px; color: rgba(255,255,255,0.6); margin-left: 10px; margin-bottom: 10px;
+            display: none; animation: breathe 1s infinite;
+        }
+
+        .queue-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 60%;
+            background: var(--card-bg); z-index: 60; border-top-left-radius: 20px; border-top-right-radius: 20px;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex; flex-direction: column; padding-bottom: 20px; border-top: 1px solid var(--border);
+        }
+        .queue-overlay.show { transform: translateY(0); }
+        .queue-backdrop { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:55; opacity:0; pointer-events:none; transition:0.3s; }
+        .queue-backdrop.show { opacity:1; pointer-events:auto; }
+        .queue-header { padding: 15px; text-align: center; color: var(--text-main); font-weight: bold; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .queue-list { flex: 1; overflow-y: auto; padding: 0 15px; }
+        .queue-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); color: var(--text-sub); font-size: 14px; cursor: pointer; }
+        .queue-item.active { color: var(--primary); }
+
+        .action-sheet-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:70; opacity:0; pointer-events:none; transition:0.2s; display:flex; flex-direction:column; justify-content:flex-end; }
+        .action-sheet-overlay.show { opacity:1; pointer-events:auto; }
+        .action-sheet { background:var(--bg-color); border-radius:14px; margin:10px; margin-bottom:calc(30px + var(--safe-bottom)); transform:translateY(100%); transition:0.3s; overflow:hidden; }
+        .action-sheet-overlay.show .action-sheet { transform:translateY(0); }
+        .as-item { background:var(--card-bg); padding:16px; text-align:center; color:var(--primary); border-bottom:1px solid var(--border); font-size:16px; cursor:pointer; }
+        .as-item.danger { color:#ff3b30; }
+        .as-cancel { margin-top:10px; border-radius:14px; background:var(--card-bg); padding:16px; text-align:center; font-weight:bold; color:var(--primary); cursor:pointer; }
+
+        /* --- WeChat --- */
+        #app-wechat { background: var(--wx-bg); }
+        
+        .wx-tab-bar { 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: calc(60px + var(--safe-bottom));
+            display: flex; background: var(--wx-bg); border-top: 1px solid var(--border); z-index: 40;
+            padding-bottom: var(--safe-bottom);
+        }
+        .wx-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: var(--text-sub); cursor: pointer; }
+        .wx-tab i { font-size: 24px; margin-bottom: 4px; }
+        .wx-tab.active { color: var(--wx-green); }
+        
+        .wx-list { overflow-y: auto; height: 100%; padding-bottom: calc(60px + var(--safe-bottom)); }
+        .wx-row { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--border); cursor: pointer; background: var(--wx-card); }
+        .wx-row:active { background: rgba(0,0,0,0.05); }
+        .wx-row > div:nth-child(2) { flex: 1; min-width: 0; }
+        
+        .wx-av { width: 44px; height: 44px; border-radius: 6px; background: #eee; background-size: cover; margin-right: 12px; flex-shrink: 0; }
+        .wx-name { font-size: 16px; color: var(--text-main); font-weight: 500; }
+        .wx-msg { font-size: 13px; color: var(--text-sub); margin-top: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        
+        .wx-room { position: absolute; top:0; left:0; width:100%; height:100%; background:var(--wx-bg); z-index:50; transform:translateX(100%); transition:0.3s; display:flex; flex-direction:column; padding-top: 0; background-size: cover; background-position: center; }
+        .wx-room.show { transform:translateX(0); }
+        .wx-room .header { background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); color: #fff;}
+        
+        .wx-hist { 
+            flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:15px; 
+            padding-bottom: calc(70px + var(--safe-bottom)); 
+        }
+        .wx-bubble-row { display: flex; gap: 10px; cursor: pointer; }
+        .wx-bubble-row.me { flex-direction: row-reverse; }
+        .wx-bubble-av { width: 36px; height: 36px; border-radius: 4px; background: #ccc; background-size: cover; flex-shrink: 0;}
+        .wx-bubble-content { background: var(--wx-card); color:var(--text-main); padding: 10px; border-radius: 4px; max-width: 70%; font-size: 15px; line-height: 1.4; position: relative; border: 1px solid var(--border); overflow: hidden; min-width: 40px; }
+        .wx-bubble-row.me .wx-bubble-content { background: var(--msg-me); color: #000; border-color: transparent; }
+        
+        /* Req 3: Quote Box Resize Fix - Word Break and Normal Whitespace */
+        .wx-quote-box {
+            font-size: 12px; color: #888; background: rgba(0,0,0,0.1); padding: 4px 8px; border-radius: 4px;
+            margin-bottom: 6px; border-left: 2px solid var(--text-sub); 
+            display: block; width: 100%;
+            white-space: normal; /* Allow text wrapping */
+            word-break: break-all; /* Break long words */
+            height: auto; /* Auto expand */
+        }
+        .wx-bubble-row.me .wx-quote-box { background: rgba(255,255,255,0.3); color: rgba(0,0,0,0.6); border-color: rgba(0,0,0,0.3); }
+
+        .wx-bubble-content img { max-width: 100%; border-radius: 4px; display: block; }
+        
+        /* Wx Bar */
+        .wx-bar { 
+            padding: 10px; background: var(--wx-bg); border-top: 1px solid var(--border); 
+            display: flex; align-items: center; gap: 10px; 
+            padding-bottom: max(10px, var(--safe-bottom)); 
+            position:absolute; bottom:0; left:0; width:100%; z-index:60; transition: bottom 0.3s;
+        }
+        .wx-pending-quote {
+            position: absolute; top: -30px; left: 0; width: 100%; height: 30px; background: var(--card-bg);
+            display: none; align-items: center; padding: 0 15px; font-size: 12px; color: var(--text-sub);
+            border-top: 1px solid var(--border); justify-content: space-between;
+        }
+        .wx-pending-quote.show { display: flex; }
+
+        .wx-in { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 16px; background: var(--wx-card); color: var(--text-main); }
+
+        .wx-me-header { background: var(--wx-card); padding: 30px 20px; display: flex; align-items: center; margin-bottom: 10px; margin-top: 60px; }
+        .wx-me-av { width: 64px; height: 64px; border-radius: 6px; background: #ddd; background-size: cover; margin-right: 15px; }
+        .wx-cell { background: var(--wx-card); padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 16px; color: var(--text-main); cursor: pointer; }
+
+        /* Settings */
+        .st-group { background: var(--card-bg); margin: 20px 15px; border-radius: 10px; overflow: hidden; }
+        .st-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text-main); }
+        .st-label { font-size: 16px; color: var(--text-main); }
+        .st-sub { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+        .apple-profile { display: flex; align-items: center; padding: 15px; background: var(--card-bg); margin: 20px 15px; border-radius: 10px; gap: 15px; }
+        .ap-av { width: 60px; height: 60px; border-radius: 50%; background: #ccc; background-size: cover; }
+        .ap-info { flex: 1; }
+        .ap-name { font-size: 20px; font-weight: 500; color: var(--text-main); }
+        .ap-desc { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+        
+        /* Sub View */
+        .sub-view { position: absolute; top:0; left:0; width:100%; height:100%; background:var(--bg-color); z-index:60; transform:translateX(100%); transition:0.3s; display:flex; flex-direction:column; padding-top: 0; }
+        .sub-view.show { transform:translateX(0); }
+        .setting-input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-top: 5px; background: var(--input-bg); color: var(--text-main); font-size: 16px; transition: border 0.3s; }
+        .setting-area { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-top: 5px; background: var(--input-bg); color: var(--text-main); font-size: 14px; height: 100px; resize: none; }
+
+        /* Cropper */
+        .cropper-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 2000; display: none; flex-direction: column;
+            padding-top: var(--safe-top);
+        }
+        .cropper-header { height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; color: #fff; background: #111; }
+        .cropper-body { flex: 1; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; touch-action: none; background: #222; }
+        .cropper-canvas { max-width: 100%; max-height: 100%; }
+        .crop-guide-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); pointer-events: none; display: flex; justify-content: center; align-items: center; }
+        .crop-guide-box { width: 280px; height: 280px; border: 2px solid rgba(255,255,255,0.8); box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); transition: 0.3s; }
+
+        /* Wx Profile */
+        .wx-profile-view { position: absolute; top:0; left:0; width:100%; height:100%; background:var(--wx-bg); z-index:55; transform:translateX(100%); transition:0.3s; display:flex; flex-direction:column; padding-top:0; }
+        .wx-profile-view.show { transform:translateX(0); }
+        .wx-pf-banner { height: 200px; background: #666; position: relative; background-size: cover; cursor: pointer; }
+        .wx-pf-av { width: 70px; height: 70px; border-radius: 8px; background: #ccc; border: 3px solid var(--wx-card); position: absolute; bottom: -35px; right: 20px; background-size: cover; cursor: pointer;}
+        .wx-pf-name { margin-top: 40px; text-align: right; padding-right: 20px; font-size: 22px; font-weight: bold; color: var(--text-main); }
+        .wx-pf-id { text-align: right; padding-right: 20px; color: var(--text-sub); font-size: 14px; cursor: pointer;}
+        .wx-pf-btn { margin: 30px 20px; background: var(--wx-green); color: #fff; padding: 12px; text-align: center; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        /* Publish Improvements */
+        .wx-pub-grid { padding: 15px; display: flex; flex-wrap: wrap; gap: 5px; }
+        .wx-pub-img { width: 32%; padding-bottom: 32%; background: #333; background-size: cover; background-position: center; border-radius: 0; position:relative;}
+        .wx-pub-add { width: 32%; padding-bottom: 32%; background: var(--wx-card); display: flex; align-items: center; justify-content: center; color: var(--text-sub); font-size: 30px; cursor: pointer; border-radius: 0; position: relative; }
+        .wx-pub-add span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .wx-pub-input { width: 100%; border:none; background:transparent; color:var(--text-main); font-size:16px; text-align:right;}
+        
+        .wx-moment-imgs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 8px; }
+        .wx-moment-img { width: 100%; aspect-ratio: 1/1; background-size: cover; background-position: center; background-color: #333; cursor: pointer;}
+
+        .toast-msg { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(50,50,50,0.95); color: #fff; padding: 10px 20px; border-radius: 20px; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
+        .toast-msg.show { opacity: 1; }
+        
+        .wx-action-area { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .wx-time { font-size: 12px; color: var(--text-sub); }
+        .wx-pop-btn { background: var(--wx-card); color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 20px; cursor: pointer; }
+        .wx-likes { background: var(--wx-card); padding: 8px; margin-top: 10px; font-size: 13px; color: var(--primary); border-radius: 4px; display: none; align-items: center; gap: 5px;}
+        .wx-likes.show { display: flex; }
+        .wx-comments { background: var(--wx-card); padding: 5px 8px; margin-top: 1px; font-size: 14px; border-radius: 4px; display: none; flex-direction: column; gap: 5px; }
+        .wx-comments.show { display: flex; }
+        .wx-comment-row { display: flex; gap: 5px; }
+        .wx-c-name { color: var(--primary); font-weight: 500; cursor: pointer;}
+        .wx-c-txt { color: var(--text-main); word-break: break-all; }
+
+        /* Comment Popup */
+        .comment-popup { 
+            position: fixed; 
+            bottom: 0; left: 0; width: 100%; 
+            background: var(--wx-card); padding: 10px; display: flex; gap: 10px; 
+            border-top: 1px solid var(--border); transition: 0.2s; 
+            z-index: 2000; 
+            align-items: center; 
+            padding-bottom: max(20px, var(--safe-bottom)); 
+            transform: translateY(100%);
+        }
+        .comment-popup.show { transform: translateY(0); }
+        .comment-backdrop {
+            position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1900;
+            display: none;
+        }
+        .comment-backdrop.show { display: block; }
+
+        #hidden-file-input { display: none; }
+        #sticker-file-input { display: none; } /* Extra input for sticker image add */
+
+        /* Sticker Panel */
+        .sticker-panel {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 320px; 
+            background: var(--wx-bg); z-index: 55; transform: translateY(100%); transition: 0.3s;
+            display: flex; flex-direction: column; border-top: 1px solid var(--border);
+            padding-bottom: max(34px, var(--safe-bottom)); 
+        }
+        .sticker-panel.show { transform: translateY(0); }
+        
+        .sticker-overlay { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 54; display:none; background: transparent; }
+        .sticker-overlay.show { display:block; }
+
+        .sticker-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--wx-card); }
+        .sticker-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 20px; color: var(--text-sub); } 
+        .sticker-tab.active { color: var(--wx-green); font-weight: bold; border-bottom: 2px solid var(--wx-green); }
+        .sticker-grid { flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .sticker-item { width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; cursor: pointer; font-size: 30px; display: flex; align-items: center; justify-content: center;}
+        .sticker-add-btn { display: flex; align-items: center; justify-content: center; border: 1px dashed var(--text-sub); border-radius: 8px; color: var(--text-sub); font-size: 24px; cursor: pointer; }
+
+        /* Chat Settings Panel */
+        .color-picker-row { display: flex; gap: 10px; overflow-x: auto; padding: 5px 0; align-items: center;}
+        .color-label-circle { 
+            width: 40px; height: 40px; border-radius: 50%; 
+            border: 2px solid var(--border); 
+            overflow: hidden; cursor: pointer; 
+            position: relative;
+            background-color: #fff; /* fallback */
+        }
+        .color-label-circle input[type="color"] {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            padding: 0; margin: 0; border: none; cursor: pointer;
+        }
+        
+        .range-wrap { display: flex; align-items: center; gap: 10px; width: 100%; }
+        .range-wrap input { flex: 1; }
+        
+        /* Gallery Overlay - Req 4: Fix Safe Area for Image List */
+        .gallery-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 3000; display: none; flex-direction: column; 
+            padding-top: 0; /* Header handles safe top */
+        }
+        .gallery-overlay.show { display: flex; }
+        /* Add padding bottom so last images are not hidden by home bar */
+        .img-grid-view { 
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 10px; 
+            overflow-y: auto; flex: 1; 
+            padding-bottom: calc(20px + var(--safe-bottom)); 
+        }
+        .img-grid-item { aspect-ratio: 1/1; background-size: cover; background-position: center; border-radius: 4px; cursor: pointer; }
+
+        /* Mention Overlay */
+        .mention-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 2500; display: none;
+            justify-content: center; align-items: flex-end;
+        }
+        .mention-overlay.show { display: flex; }
+        .mention-box {
+            width: 100%; background: var(--card-bg); border-top-left-radius: 20px; border-top-right-radius: 20px;
+            max-height: 70%; display: flex; flex-direction: column;
+            padding-bottom: var(--safe-bottom);
+        }
+        
+        /* Sticker Meaning Popup */
+        .sticker-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 2100;
+            display: none; align-items: center; justify-content: center;
+        }
+        .sticker-modal {
+            width: 300px; background: var(--card-bg); border-radius: 14px;
+            padding: 20px; display: flex; flex-direction: column; align-items: center;
+            border: 1px solid var(--border);
+        }
+        .sticker-modal input {
+            width: 100%; margin-top: 15px; padding: 10px; background: var(--input-bg);
+            border: 1px solid var(--border); color: var(--text-main); border-radius: 8px;
+        }
+        .sticker-modal-btns {
+            display: flex; gap: 10px; width: 100%; margin-top: 15px;
+        }
+        
+        /* Typing Bubble */
+        .typing-bubble {
+             background: var(--wx-card); color: var(--text-sub); 
+             padding: 8px 12px; border-radius: 12px; 
+             font-size: 20px; letter-spacing: 2px;
+             align-self: flex-start; margin-left: 10px;
+             display: none;
+        }
+        .typing-bubble.show { display: block; animation: breathe 1s infinite alternate; }
+        @keyframes breathe { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <div id="phone-scaler">
+        <div class="phone-body">
+            <div class="screen" id="wallpaper-layer" style="background-image: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600');">
+                
+                <div class="status-bar" onclick="scrollToTop()">
+                    <span id="clock">12:30</span>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <div class="api-status error" id="api-indicator"><div class="api-dot"></div><span>API</span></div>
+                        <span id="bat-level" style="font-size:10px;"></span>
+                        <i class="fas fa-battery-full" id="bat-icon"></i>
+                    </div>
+                </div>
+
+                <div class="toast-msg" id="toast-msg"><i class="fas fa-check"></i> <span>OK</span></div>
+
+                <div class="cropper-overlay" id="cropper-view">
+                    <div class="cropper-header">
+                        <div onclick="closeCropper()">取消</div>
+                        <div style="font-size:14px; color:#aaa;">雙指/滾輪縮放</div>
+                        <div onclick="confirmCrop()" style="color:var(--primary); font-weight:bold;">完成</div>
+                    </div>
+                    <div class="cropper-body" id="cropper-area">
+                        <canvas id="crop-canvas"></canvas>
+                        <div class="crop-guide-overlay"><div class="crop-guide-box"></div></div>
+                    </div>
+                </div>
+
+                <div class="action-sheet-overlay" id="as-menu">
+                    <div style="margin:10px; width:calc(100% - 20px);">
+                        <div class="action-sheet" style="margin:0;">
+                            <div class="as-item" style="color:var(--text-sub); font-size:13px; cursor:default;">選項</div>
+                            <div class="as-item danger" onclick="deleteSong()">刪除歌曲</div>
+                        </div>
+                        <div class="as-cancel" onclick="closeMenu()">取消</div>
+                    </div>
+                </div>
+
+                <div class="queue-backdrop" id="queue-backdrop" onclick="toggleQueue(false)"></div>
+                
+                <div class="gallery-overlay" id="chat-img-gallery">
+                    <div class="header"><div class="header-btn left" onclick="closeChatGallery()"><i class="fas fa-chevron-left"></i></div>聊天圖片</div>
+                    <div class="img-grid-view" id="chat-gallery-grid"></div>
+                </div>
+
+                <div class="comment-backdrop" id="comment-backdrop" onclick="closeCommentPopup()"></div>
+                
+                <div class="sticker-overlay" id="sticker-overlay" onclick="toggleStickers()"></div>
+
+                <div class="mention-overlay" id="mention-overlay">
+                    <div class="mention-box">
+                        <div style="padding:15px; text-align:center; font-weight:bold; border-bottom:1px solid var(--border); color:var(--text-main);">選擇提醒的人</div>
+                        <div id="mention-list" style="overflow-y:auto; flex:1; padding-bottom:30px;"></div>
+                        <div style="padding:15px; text-align:center; color:var(--primary); cursor:pointer; border-top:1px solid var(--border);" onclick="closeMentionSelector()">完成</div>
+                    </div>
+                </div>
+                
+                <div class="sticker-modal-overlay" id="sticker-prompt-modal">
+                    <div class="sticker-modal">
+                        <div style="color:var(--text-main); font-weight:bold;">新增貼圖</div>
+                        <div style="color:var(--text-sub); font-size:12px; margin-top:5px;">請輸入此貼圖代表的含義 (Prompt)</div>
+                        <input type="text" id="sticker-prompt-input" placeholder="例如：開心、大笑、生氣...">
+                        <div class="sticker-modal-btns">
+                            <div class="pl-btn pl-btn-shuffle" onclick="closeStickerPrompt()">取消</div>
+                            <div class="pl-btn pl-btn-play" onclick="confirmAddSticker()">確定</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="home-screen">
+                    <div class="icon-grid">
+                        <div class="app-icon-wrap" onclick="openApp('music')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, var(--primary), #00acdf);"><i class="fas fa-music"></i></div>
+                            <div class="app-label">音樂</div>
+                        </div>
+                        <div class="app-icon-wrap" onclick="openApp('wechat')">
+                            <div class="app-icon" style="background: #07c160;"><i class="fas fa-comment"></i></div>
+                            <div class="app-label">微信</div>
+                        </div>
+                        <div class="app-icon-wrap" onclick="openApp('settings')">
+                            <div class="app-icon" style="background: #8e8e93;"><i class="fas fa-cog"></i></div>
+                            <div class="app-label">設定</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="app-music" class="app-view">
+                    <div class="header">
+                        <div class="header-btn left" onclick="document.getElementById('hidden-file-input').click()"><i class="fas fa-plus"></i></div>
+                        音樂
+                        <div class="header-btn right" onclick="openSubSettings('music-style')"><div class="header-av" id="music-header-av"></div></div>
+                    </div>
+                    
+                    <div id="mv-library" class="m-content active">
+                        <div style="padding:15px; background:var(--card-bg); border-bottom:1px solid var(--border);">
+                            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                                <div class="pl-btn pl-btn-play" onclick="playAll(0)"><i class="fas fa-play"></i> 順序</div>
+                                <div class="pl-btn pl-btn-shuffle" onclick="playAll(1)"><i class="fas fa-random"></i> 隨機</div>
+                            </div>
+                            <input type="text" id="lib-search" placeholder="搜尋資料庫..." style="width:100%; padding:10px; background:var(--input-bg); border:none; border-radius:8px; color:var(--text-main);" oninput="renderSongs()">
+                        </div>
+                        <div id="song-container"></div>
+                    </div>
+
+                    <div id="mv-search" class="m-content">
+                        <div style="padding:15px; background:var(--card-bg);">
+                            <div style="display:flex; gap:10px;">
+                                <input type="text" id="yt-search-val" placeholder="搜尋 YouTube..." style="flex:1; padding:10px; background:var(--input-bg); border:none; border-radius:8px; color:var(--text-main);" onkeydown="if(event.key==='Enter') searchYT()">
+                                <div onclick="searchYT()" style="padding:10px 15px; background:var(--primary); color:#fff; border-radius:8px; font-weight:bold; cursor:pointer;"><i class="fas fa-search"></i></div>
+                            </div>
+                        </div>
+                        <div id="yt-results" style="padding:10px;"></div>
+                    </div>
+
+                    <div class="mini-player" id="mini-player" onclick="openFullPlayer()">
+                        <div class="s-cover" id="mp-cover"></div>
+                        <div style="flex:1;"><div class="s-title" id="mp-title">未播放</div></div>
+                        <i class="fas fa-play" id="mp-btn" onclick="event.stopPropagation(); togglePlay()" style="padding:10px; color:var(--text-main);"></i>
+                    </div>
+
+                    <div class="music-tabs">
+                        <div class="m-tab active" onclick="switchTab(0, '音樂')"><i class="fas fa-music"></i>歌曲</div>
+                        <div class="m-tab" onclick="switchTab(1, 'YouTube 搜尋')"><i class="fab fa-youtube"></i>搜尋</div>
+                    </div>
+                </div>
+
+                <div id="sub-music-style" class="sub-view">
+                    <div class="header"><div class="header-btn left" onclick="closeSubSettings('music-style')"><i class="fas fa-chevron-left"></i></div>外觀設定</div>
+                    <div class="st-group">
+                        <div class="st-item">
+                            <div><div class="st-label">背景圖片</div><div class="st-sub">全屏播放器背景</div></div>
+                            <label style="color:var(--primary); cursor:pointer;">選擇 <input type="file" accept="image/*" style="display:none;" onchange="initCrop(this, 'musicBg')"></label>
+                        </div>
+                        <div class="st-item">
+                            <div><div class="st-label">背景清晰度</div><div class="st-sub" id="opacity-label">20%</div></div>
+                            <input type="range" min="0" max="100" value="20" style="width:100px;" oninput="updateMusicOpacity(this.value)">
+                        </div>
+                        <div class="st-item" onclick="resetMusicStyle()" style="color:red; justify-content:center;">重置預設</div>
+                    </div>
+                </div>
+
+                <div class="full-player-overlay" id="full-player">
+                    <div class="fp-bg-mask" id="fp-bg-mask"></div>
+                    <div class="fp-header">
+                        <div class="fp-back-btn" onclick="closeFullPlayer()"><i class="fas fa-chevron-down"></i></div>
+                        <div class="together-pill" onclick="scrollToTogether()">
+                            <div class="tp-avatars"><div class="tp-av char" id="tp-char-av"></div><div class="tp-av me" id="tp-user-av"></div></div>
+                            <span class="tp-text">一起聽</span>
+                        </div>
+                    </div>
+                    
+                    <div class="player-scroll-view" id="player-scroll-area">
+                        <div style="flex-shrink:0;">
+                            <div class="vinyl-container">
+                                <div class="vinyl-disk" id="vinyl"><div class="vinyl-cover" id="fp-cover"></div></div>
+                            </div>
+
+                            <div style="padding:0 30px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+                                <div style="overflow:hidden; width:85%;">
+                                    <div class="s-title" id="fp-title" style="color:white; font-size:22px; margin-bottom:5px;">Title</div>
+                                    <div class="s-artist" id="fp-artist" style="color:#aaa;">Artist</div>
+                                </div>
+                                <i class="far fa-heart s-fav-btn" id="fp-heart" style="color:#ccc; font-size:28px; cursor:pointer;" onclick="toggleFavCurrent()"></i>
+                            </div>
+
+                            <div style="padding:0 30px 40px;">
+                                <div style="height:4px; background:rgba(255,255,255,0.2); border-radius:2px; margin-bottom:30px; position:relative;" id="prog-bg" onclick="seek(event)">
+                                    <div id="prog-bar" style="width:0%; height:100%; background:var(--primary); border-radius:2px;"></div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; color:#fff; font-size:24px;">
+                                    <i class="fas fa-redo" id="btn-mode" style="font-size:20px; color:#999; cursor:pointer;" onclick="toggleMode()"></i>
+                                    <i class="fas fa-step-backward" onclick="playPrev()"></i>
+                                    <i class="fas fa-play-circle" id="fp-play-btn" style="font-size:60px; cursor:pointer;" onclick="togglePlay()"></i>
+                                    <i class="fas fa-step-forward" onclick="playNext()"></i>
+                                    <i class="fas fa-list" style="font-size:20px; color:#999; cursor:pointer;" onclick="toggleQueue(true)"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="together-area">
+                            <div class="chat-couple-header">
+                                <div class="c-av-wrap"><div class="c-av left" id="tg-char-av"></div><div class="c-av right" id="tg-user-av"></div><div class="c-heart"><i class="fas fa-heart"></i></div></div>
+                            </div>
+                            <div class="mc-box">
+                                <div class="mc-hist" id="mc-hist"></div>
+                                <div class="mc-typing" id="mc-typing-indicator">對方正在輸入...</div>
+                            </div>
+                            <div class="mc-input-area">
+                                <input type="text" id="mc-in" placeholder="說點什麼..." style="flex:1; padding:10px; border-radius:20px; border:none; background:rgba(255,255,255,0.2); color:#fff;" onkeydown="if(event.key==='Enter') sendMusicChat()">
+                                <div class="mc-send-btn" onclick="sendMusicChat()"><i class="fas fa-paper-plane"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="queue-overlay" id="queue-view">
+                    <div class="queue-header">待播清單</div>
+                    <div class="queue-list" id="queue-list"></div>
+                </div>
+
+                <div id="app-wechat" class="app-view">
+                    <div id="wx-view-chats" style="height:100%; display:flex; flex-direction:column;">
+                        <div class="header">微信 <div class="header-btn right" style="color:var(--text-main);"><i class="fas fa-plus-circle"></i></div></div>
+                        <div class="wx-list" id="wx-chat-list"></div>
+                    </div>
+                    
+                    <div id="wx-view-contacts" style="height:100%; display:none; flex-direction:column;">
+                        <div class="header">通訊錄 <div class="header-btn right"><i class="fas fa-user-plus"></i></div></div>
+                        <div class="wx-list" id="wx-contact-list"></div>
+                    </div>
+                    
+                    <div id="wx-view-moments" style="height:100%; display:none; flex-direction:column;">
+                        <div class="header">朋友圈 <div class="header-btn right" style="color:var(--text-main);" onclick="openWxPublish()"><i class="fas fa-camera"></i></div></div>
+                        <div class="wx-list" id="wx-moments-list" style="padding:0; color:var(--text-sub);"></div>
+                    </div>
+
+                    <div id="wx-view-me" style="height:100%; display:none; flex-direction:column; overflow-y:auto;">
+                         <div style="position:relative;">
+                             <div class="wx-pf-banner" id="wx-me-banner" onclick="initCrop(this, 'wxBannerEdit', true)"></div>
+                             <div class="wx-pf-av" id="wx-me-av-big" onclick="initCrop(this, 'userAvatar')"></div>
+                         </div>
+                         <div class="wx-pf-name" id="wx-me-name-big" style="margin-top:50px;">User</div>
+                         <div class="wx-pf-id" id="wx-me-sig" onclick="editSignature()" style="cursor:pointer; margin-top:5px; color:var(--text-sub);">點擊設定簽名...</div>
+                         <div style="margin-top:20px; border-top:1px solid var(--border);"></div>
+                         <div class="wx-cell" onclick="openWxProfile('me')"><div><i class="fas fa-images" style="color:var(--primary); margin-right:10px;"></i> 我的相簿</div><i class="fas fa-chevron-right" style="color:var(--text-sub);"></i></div>
+                         <div class="wx-cell"><div><i class="fas fa-cog" style="color:var(--primary); margin-right:10px;"></i> 設定</div><i class="fas fa-chevron-right" style="color:var(--text-sub);"></i></div>
+                    </div>
+
+                    <div class="wx-tab-bar">
+                        <div class="wx-tab active" onclick="switchWxTab(0)"><i class="fas fa-comment"></i>聊天</div>
+                        <div class="wx-tab" onclick="switchWxTab(1)"><i class="fas fa-address-book"></i>通訊錄</div>
+                        <div class="wx-tab" onclick="switchWxTab(2)"><i class="fas fa-compass"></i>發現</div>
+                        <div class="wx-tab" onclick="switchWxTab(3)"><i class="fas fa-user"></i>我</div>
+                    </div>
+                </div>
+
+                <div id="wx-publish-view" class="sub-view">
+                    <div class="header" style="background:var(--card-bg);">
+                        <div class="header-btn left" onclick="closeWxPublish()" style="font-size:16px;">取消</div>
+                        <div class="header-btn right" onclick="doPublish()"><div style="background:var(--wx-green); color:#fff; padding:4px 12px; border-radius:4px; font-size:14px;">發表</div></div>
+                    </div>
+                    <div style="padding:20px; background:var(--card-bg); flex:1;">
+                         <textarea id="wx-pub-txt" style="width:100%; height:100px; padding:0; background:transparent; border:none; color:var(--text-main); font-size:16px; resize:none;" placeholder="這一刻的想法..."></textarea>
+                         <div class="wx-pub-grid" id="wx-pub-grid">
+                            <div class="wx-pub-add" onclick="document.getElementById('pub-file-in').click()"><span>+</span></div>
+                         </div>
+                         <div style="margin-top:30px; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+                             <div class="wx-cell" style="padding:15px 0;">
+                                 <div><i class="fas fa-map-marker-alt" style="margin-right:10px;"></i> <input class="wx-pub-input" id="wx-pub-loc" placeholder="所在位置" style="text-align:left; width:200px;"></div>
+                             </div>
+                             <div class="wx-cell" style="padding:15px 0; border-bottom:none;" onclick="openMentionSelector()">
+                                 <div><i class="fas fa-at" style="margin-right:10px;"></i> <span id="wx-pub-mention-txt">提醒誰看</span></div>
+                                 <i class="fas fa-chevron-right" style="font-size:12px; color:var(--text-sub);"></i>
+                             </div>
+                         </div>
+                    </div>
+                    <input type="file" id="pub-file-in" multiple accept="image/*" style="display:none;" onchange="handlePubImgs(this)">
+                </div>
+
+                <div class="wx-profile-view" id="wx-profile-view">
+                    <div style="position:absolute; top:calc(10px + var(--safe-top)); left:15px; z-index:10; color:#fff; font-size:24px; cursor:pointer; text-shadow:0 1px 3px rgba(0,0,0,0.5);" onclick="closeWxProfile()"><i class="fas fa-chevron-left"></i></div>
+                    <div style="position:absolute; top:calc(10px + var(--safe-top)); right:15px; z-index:10; color:#fff; font-size:20px; cursor:pointer; text-shadow:0 1px 3px rgba(0,0,0,0.5);" onclick="openWxProfileSettings()"><i class="fas fa-ellipsis-h"></i></div>
+                    
+                    <div class="wx-pf-banner" id="wx-pf-banner">
+                        <div class="wx-pf-av" id="wx-pf-av"></div>
+                    </div>
+                    <div class="wx-pf-name" id="wx-pf-name">Name</div>
+                    <div class="wx-pf-id" id="wx-pf-sig"></div>
+                    
+                    <div id="wx-pf-actions">
+                        <div class="wx-pf-btn" onclick="openWxChatFromProfile()">發消息</div>
+                    </div>
+
+                    <div style="margin-top:20px; border-top:1px solid var(--border); padding-top:10px; background:var(--bg-color); flex:1; display:flex; flex-direction:column;">
+                        <div class="wx-cell" style="background:var(--bg-color); font-weight:bold; font-size:14px; color:var(--text-sub);">朋友圈</div>
+                        <div id="wx-pf-moments" style="flex:1; overflow-y:auto; padding-bottom:40px;"></div>
+                    </div>
+                </div>
+
+                <div class="wx-room" id="wx-room">
+                    <div class="header">
+                        <div class="header-btn left" onclick="closeWxChat()" style="color:#fff;"><i class="fas fa-chevron-left"></i></div>
+                        <span id="wx-room-title">Chat</span>
+                        <div class="header-btn right" style="color:#fff;" onclick="openWxChatSettings()"><i class="fas fa-ellipsis-h"></i></div>
+                    </div>
+                    <div class="wx-hist" id="wx-room-hist"></div>
+                    <div class="wx-bubble-row" id="wx-typing-indicator" style="display:none; padding: 0 15px 15px 15px;">
+                        <div class="wx-bubble-av" id="wx-typing-av"></div>
+                        <div class="typing-bubble show">...</div>
+                    </div>
+                    
+                    <div class="wx-bar" id="wx-input-bar">
+                        <div class="wx-pending-quote" id="wx-pending-quote">
+                            <span id="wx-quote-txt"></span>
+                            <i class="fas fa-times" style="cursor:pointer;" onclick="cancelQuote()"></i>
+                        </div>
+                        
+                        <i class="far fa-smile" style="font-size:24px; color:var(--text-sub); cursor:pointer;" onclick="toggleStickers()"></i>
+                        <input type="text" class="wx-in" id="wx-in">
+                        <i class="fas fa-plus-circle" style="font-size:24px; color:var(--text-sub); cursor:pointer;" onclick="document.getElementById('wx-img-input').click()"></i>
+                    </div>
+                    <input type="file" id="wx-img-input" accept="image/*" style="display:none;" onchange="sendWxImg(this)">
+                    
+                    <div class="sticker-panel" id="wx-sticker-panel">
+                        <div class="sticker-tabs" id="sticker-tabs"></div>
+                        <div class="sticker-grid" id="sticker-grid"></div>
+                    </div>
+                </div>
+
+                <div id="sub-wx-profile-edit" class="sub-view">
+                    <div class="header"><div class="header-btn left" onclick="closeSubSettings('wx-profile-edit')"><i class="fas fa-chevron-left"></i></div>編輯資料</div>
+                    <div class="st-group">
+                        <div class="st-item"><span class="st-label">更換頭像</span><label style="color:var(--primary);cursor:pointer;">選擇 <input type="file" accept="image/*" style="display:none;" onchange="initCrop(this,'wxProfileAv')"></label></div>
+                        <div class="st-item"><span class="st-label">更換背景</span><label style="color:var(--primary);cursor:pointer;">選擇 <input type="file" accept="image/*" style="display:none;" onchange="initCrop(this,'wxProfileBanner')"></label></div>
+                        <div class="st-item">
+                            <div style="width:100%">
+                                <div class="st-label">個性簽名</div>
+                                <input type="text" class="setting-input" id="inp-wx-sig-edit" placeholder="輸入簽名...">
+                            </div>
+                        </div>
+                        <div class="pl-btn pl-btn-play" style="margin:20px;" onclick="saveWxProfileSettings()">儲存修改</div>
+                    </div>
+                </div>
+
+                <div id="sub-wx-chat-settings" class="sub-view">
+                    <div class="header"><div class="header-btn left" onclick="closeSubSettings('wx-chat-settings')"><i class="fas fa-chevron-left"></i></div>聊天設定</div>
+                    <div style="flex:1; overflow-y:auto; padding-bottom:30px;">
+                        <div class="st-group">
+                            <div class="st-item"><span class="st-label">聊天背景</span><label style="color:var(--primary);cursor:pointer;">更換 <input type="file" accept="image/*" style="display:none;" onchange="initCrop(this,'wxChatBg')"></label></div>
+                            <div class="st-item" onclick="viewChatImages()"><span class="st-label">查看聊天圖片</span><i class="fas fa-chevron-right" style="color:var(--text-sub);"></i></div>
+                        </div>
+                        <div class="st-group">
+                            <div style="padding:15px; border-bottom:1px solid var(--border);">
+                                <div class="st-label">我的氣泡背景</div>
+                                <div class="color-picker-row">
+                                    <label class="color-label-circle" id="lbl-me-bg" style="background-color: var(--msg-me);">
+                                        <input type="color" id="cp-me-bg" onchange="updateTempColor('bubbleMe', this.value); document.getElementById('lbl-me-bg').style.backgroundColor=this.value;">
+                                    </label>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                                    <div class="st-label">文字顏色</div>
+                                    <label class="color-label-circle" id="lbl-me-text" style="background-color: #000; width:30px; height:30px;">
+                                        <input type="color" id="cp-me-text" onchange="updateTempColor('textMe', this.value); document.getElementById('lbl-me-text').style.backgroundColor=this.value;">
+                                    </label>
+                                </div>
+                                <div class="st-label" style="margin-top:10px;">透明度</div>
+                                <div class="range-wrap"><input type="range" min="0" max="100" id="rng-me-op" oninput="updateTempColor('bubbleMeOp', this.value/100)"></div>
+                                <div class="st-label" style="margin-top:10px;">字體大小 (px)</div>
+                                <div class="range-wrap"><input type="range" min="12" max="24" id="rng-font-size" oninput="updateTempColor('fontSize', this.value)"></div>
+                            </div>
+                            <div style="padding:15px;">
+                                <div class="st-label">對方氣泡背景</div>
+                                <div class="color-picker-row">
+                                    <label class="color-label-circle" id="lbl-other-bg" style="background-color: var(--wx-card);">
+                                        <input type="color" id="cp-other-bg" onchange="updateTempColor('bubbleOther', this.value); document.getElementById('lbl-other-bg').style.backgroundColor=this.value;">
+                                    </label>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                                    <div class="st-label">文字顏色</div>
+                                    <label class="color-label-circle" id="lbl-other-text" style="background-color: #fff; width:30px; height:30px;">
+                                        <input type="color" id="cp-other-text" onchange="updateTempColor('textOther', this.value); document.getElementById('lbl-other-text').style.backgroundColor=this.value;">
+                                    </label>
+                                </div>
+                                <div class="st-label" style="margin-top:10px;">透明度</div>
+                                <div class="range-wrap"><input type="range" min="0" max="100" id="rng-other-op" oninput="updateTempColor('bubbleOtherOp', this.value/100)"></div>
+                            </div>
+                            <div class="pl-btn pl-btn-play" style="margin:15px;" onclick="saveWxChatSettings()">套用設定</div>
+                            <div class="pl-btn pl-btn-shuffle" style="margin:0 15px 15px;" onclick="resetWxChatSettings()">重置預設</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="comment-popup" id="comment-popup">
+                    <input type="text" id="comm-in" class="wx-in" placeholder="評論..." style="background:var(--input-bg);" onkeydown="if(event.key==='Enter') submitComment()">
+                    <div onclick="submitComment()" style="color:var(--wx-green); font-weight:bold; cursor:pointer; padding:0 10px;">發送</div>
+                </div>
+
+                <div id="app-settings" class="app-view">
+                    <div class="header">設定</div>
+                    <div style="flex:1; overflow-y:auto; padding-bottom:30px;">
+                        <div class="apple-profile" onclick="openSubSettings('profile')">
+                            <div class="ap-av" id="st-u-av"></div>
+                            <div class="ap-info"><div class="ap-name" id="st-u-name">User</div><div class="ap-desc">Apple ID, iCloud</div></div>
+                            <i class="fas fa-chevron-right" style="color:var(--text-sub);"></i>
+                        </div>
+                        <div class="st-group">
+                            <div class="st-item" onclick="openSubSettings('character-list')"><div><div class="st-label">角色管理</div></div><i class="fas fa-chevron-right" style="color:var(--text-sub);"></i></div>
+                            <div class="st-item">
+                                <span class="st-label">主題色系</span>
+                                <label class="color-label-circle" style="width:30px; height:30px; background-color: var(--primary);">
+                                    <input type="color" id="theme-color-picker" onchange="updateThemeColor(this.value)">
+                                </label>
+                            </div>
+                            <div class="st-item"><span class="st-label">夜間模式</span><i class="fas fa-toggle-on" id="theme-toggle" style="font-size:24px; color:var(--primary); cursor:pointer;" onclick="toggleTheme()"></i></div>
+                        </div>
+                        <div class="st-group">
+                            <div class="st-item" onclick="openSubSettings('ai')"><div><div class="st-label">AI 接入</div></div><i class="fas fa-chevron-right" style="color:var(--text-sub);"></i></div>
+                            <div class="st-item"><span class="st-label">更換桌布</span><label style="color:var(--primary);cursor:pointer;">選擇 <input type="file" accept="image/*" style="display:none;" onchange="initCrop(this, 'wallpaper')"></label></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sub-profile" class="sub-view">
+                    <div class="header"><div class="header-btn left" onclick="closeSubSettings('profile')"><i class="fas fa-chevron-left"></i></div>個人資料</div>
+                    <div class="st-group">
+                        <div class="st-item"><span class="st-label">頭像</span><label style="color:var(--primary);cursor:pointer;">更換 <input type="file" accept="image/*" style="display:none;" onchange="initCrop(this,'userAvatar')"></label></div>
+                        <div class="st-item"><span class="st-label">名稱</span><input type="text" class="setting-input" id="inp-user-name" onchange="saveConfig()" style="width:150px; margin:0;"></div>
+                    </div>
+                </div>
+
+                <div id="sub-character-list" class="sub-view">
+                    <div class="header">
+                        <div class="header-btn left" onclick="closeSubSettings('character-list')"><i class="fas fa-chevron-left"></i></div>
+                        角色管理
+                        <div class="header-btn right" onclick="addNewCharacter()"><i class="fas fa-plus"></i></div>
+                    </div>
+                    <div class="st-group" id="char-list-container"></div>
+                </div>
+
+                <div id="sub-character-edit" class="sub-view">
+                    <div class="header"><div class="header-btn left" onclick="closeSubSettings('character-edit')"><i class="fas fa-chevron-left"></i></div>編輯角色</div>
+                    <div style="padding:20px;">
+                        <div class="st-label">角色頭像</div>
+                        <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                            <div class="ap-av" id="edit-c-av"></div>
+                            <label style="color:var(--primary);cursor:pointer; font-weight:bold;">更換 <input type="file" accept="image/*" style="display:none;" onchange="initCrop(this,'charEdit')"></label>
+                        </div>
+                        <div class="st-label">角色名稱</div>
+                        <input type="text" class="setting-input" id="inp-char-name">
+                        <div class="st-label" style="margin-top:15px;">System Prompt</div>
+                        <textarea class="setting-area" id="inp-char-prompt" placeholder="在此輸入角色設定、性格、背景故事..."></textarea>
+                        <div class="pl-btn pl-btn-play" style="margin-top:20px;" onclick="saveCharEdit()">儲存</div>
+                        <div class="pl-btn pl-btn-shuffle" style="margin-top:10px; color:red; border-color:red;" onclick="deleteCharEdit()">刪除</div>
+                    </div>
+                </div>
+
+                <div id="sub-ai" class="sub-view">
+                    <div class="header"><div class="header-btn left" onclick="closeSubSettings('ai')"><i class="fas fa-chevron-left"></i></div>API 設定</div>
+                    <div style="padding:20px; overflow-y:auto;">
+                        <div class="st-label">API Endpoint</div><input type="text" class="setting-input" id="inp-ai-url" placeholder="https://api.openai.com/v1" onchange="saveConfig()">
+                        <div class="st-label" style="margin-top:15px;">API Key</div><input type="password" class="setting-input" id="inp-ai-key" placeholder="sk-..." onchange="saveConfig()">
+                        <div class="st-label" style="margin-top:15px;">Model</div><input type="text" class="setting-input" id="inp-ai-model" placeholder="gpt-3.5-turbo" onchange="saveConfig()">
+                        <div style="height:1px; background:var(--border); margin:20px 0;"></div>
+                        <div class="st-label">YouTube Data API Key</div><input type="password" class="setting-input" id="inp-yt-key" placeholder="AIza..." onchange="saveConfig()">
+                    </div>
+                </div>
+
+                <div class="home-indicator-area" onclick="goHome()"><div class="home-indicator"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="hidden-file-input" multiple accept="audio/*" onchange="importAudio(this.files)">
+    <input type="file" id="sticker-file-input" accept="image/*" onchange="addStickerImage(this)">
+    <audio id="audio-player"></audio>
+    <div id="yt-hidden" style="display:none;"></div>
+
+    <script>
+        let config = { 
+            themeColor: '#55d0ff', 
+            wallpaper:'', musicBg:'', musicOpacity:0.2, darkMode:true,
+            aiUrl:'', aiKey:'', aiModel:'gpt-3.5-turbo', ytKey:'',
+            userName:'User', userAv:'https://i.pravatar.cc/150?img=11', userBanner:'', userSignature:'這傢伙很懶，什麼都沒寫。',
+            characters: [
+                { id: 'c1', name: 'AI 助手', av: 'https://i.pravatar.cc/150?img=32', prompt: '你是一個溫柔的助手。', banner:'', signature:'我是AI助手。', msgs: [{me:false, txt:'你好！', type:'text', time: Date.now()}], chatSettings:{} }
+            ],
+            activeCharId: 'c1',
+            moments: [],
+            stickers: [
+                {name:'預設', icon:'😊', items:['😊','😂','😭','😍','😡','👍','👎','🙏','🎉','❤️']}
+            ]
+        };
+        let db, songs=[], queue=[], curIdx=0, isPlaying=false, playMode=0; 
+        let menuTargetId=null, ytPlayer, curWxId=null, editCharId=null;
+        let activeCommentPostId = null;
+        let mentionedCharIds = []; 
+        let tempStickerGroupIdx = 0; 
+        
+        let cropImg=new Image(), cropCanvas=document.getElementById('crop-canvas'), cropCtx=cropCanvas.getContext('2d');
+        let cropScale=1, cropX=0, cropY=0, isDragging=false, startX, startY, cropTargetKey=null, cropIsMe=false;
+        let pubImgs = []; 
+        
+        let pendingQuote = null; 
+
+        const req=indexedDB.open("Mizuiro_V27", 1);
+        req.onupgradeneeded=e=>{ e.target.result.createObjectStore('songs',{keyPath:'id', autoIncrement:true}); };
+        req.onsuccess=e=>{ db=e.target.result; loadSongs(); };
+        
+        if(localStorage.getItem('mz_v27_cfg')) config = JSON.parse(localStorage.getItem('mz_v27_cfg'));
+        
+        if(!config.themeColor) config.themeColor = '#55d0ff';
+        config.characters.forEach(c => {
+             if(!c.chatSettings) c.chatSettings = {};
+             if(!c.msgs) c.msgs = [];
+             c.msgs.forEach(m => { if(!m.type) m.type='text'; if(!m.time) m.time=Date.now(); });
+        });
+        if(!config.stickers) config.stickers = [{name:'預設', icon:'😊', items:['😊','😂','😭','😍','😡','👍','👎','🙏','🎉','❤️']}];
+        config.stickers.forEach(s => { if(!s.icon) s.icon = s.name.substring(0,2); });
+
+        applyConfig(); renderCharList(); renderWxMoments();
+
+        setInterval(()=>{
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+        }, 1000);
+        
+        if(navigator.getBattery){
+            navigator.getBattery().then(bat=>{
+                updateBattery(bat);
+                bat.addEventListener('levelchange', ()=>updateBattery(bat));
+                bat.addEventListener('chargingchange', ()=>updateBattery(bat));
+            });
+        }
+        function updateBattery(b){
+            const p = Math.round(b.level * 100);
+            document.getElementById('bat-level').innerText = p + '%';
+            const i = document.getElementById('bat-icon');
+            i.className = b.charging ? "fas fa-bolt" : 
+                         (p>90?"fas fa-battery-full": p>60?"fas fa-battery-three-quarters": p>30?"fas fa-battery-half": p>10?"fas fa-battery-quarter":"fas fa-battery-empty");
+        }
+
+        function scrollToTop(){
+            const activeView = document.querySelector('.app-view.active');
+            if(activeView){
+                const scrollable = activeView.querySelector('.m-content') || activeView.querySelector('.wx-list') || activeView.querySelector('div[style*="overflow-y"]');
+                if(scrollable) scrollable.scrollTo({top:0, behavior:'smooth'});
+            }
+        }
+
+        // Cropper Logic
+        function initCrop(input, key, isMe=false) {
+            if(input.files && input.files[0] || (input.tagName === 'DIV' && key==='wxBannerEdit')){ 
+                if(key==='wxBannerEdit') { document.getElementById('hidden-file-input').click(); cropTargetKey = key; cropIsMe = isMe; return; }
+                if(input.tagName === 'DIV' && key==='userAvatar') { document.getElementById('hidden-file-input').click(); cropTargetKey = key; return; }
+                
+                const file = input.files[0];
+                const r=new FileReader();
+                r.onload=e=>{
+                    cropImg.src=e.target.result;
+                    cropImg.onload=()=>{
+                        cropTargetKey=key; cropScale=1; cropX=0; cropY=0;
+                        document.getElementById('cropper-view').style.display='flex';
+                        
+                        const box = document.querySelector('.crop-guide-box');
+                        if(['userAvatar','charEdit','music-header-av','wxProfileAv'].includes(key)){
+                            box.style.width='280px'; box.style.height='280px';
+                        } else if(['wallpaper','musicBg','wxChatBg'].includes(key)){
+                            box.style.width='280px'; box.style.height='600px';
+                        } else if(['wxBannerEdit','wxProfileBanner'].includes(key)){
+                            box.style.width='100%'; box.style.height='200px';
+                        }
+
+                        drawCrop();
+                    }
+                };
+                r.readAsDataURL(file);
+            }
+            if(input.value) input.value = '';
+        }
+        function drawCrop(){
+            cropCanvas.width = document.getElementById('cropper-area').clientWidth;
+            cropCanvas.height = document.getElementById('cropper-area').clientHeight;
+            cropCtx.clearRect(0,0,cropCanvas.width,cropCanvas.height);
+            const w = cropImg.width * cropScale;
+            const h = cropImg.height * cropScale;
+            const cx = (cropCanvas.width - w)/2 + cropX;
+            const cy = (cropCanvas.height - h)/2 + cropY;
+            cropCtx.drawImage(cropImg, cx, cy, w, h);
+        }
+        cropCanvas.addEventListener('wheel', e=>{ e.preventDefault(); const d=e.deltaY>0?0.9:1.1; cropScale*=d; drawCrop(); });
+        cropCanvas.addEventListener('mousedown', e=>{isDragging=true; startX=e.offsetX-cropX; startY=e.offsetY-cropY;});
+        cropCanvas.addEventListener('mousemove', e=>{if(isDragging){cropX=e.offsetX-startX; cropY=e.offsetY-startY; drawCrop();}});
+        cropCanvas.addEventListener('mouseup', ()=>isDragging=false);
+        cropCanvas.addEventListener('touchstart', e=>{isDragging=true; startX=e.touches[0].clientX-cropX; startY=e.touches[0].clientY-cropY;});
+        cropCanvas.addEventListener('touchmove', e=>{if(isDragging){e.preventDefault(); cropX=e.touches[0].clientX-startX; cropY=e.touches[0].clientY-startY; drawCrop();}});
+        cropCanvas.addEventListener('touchend', ()=>isDragging=false);
+
+        function closeCropper(){ document.getElementById('cropper-view').style.display='none'; }
+        
+        function confirmCrop(){
+            const guideBox = document.querySelector('.crop-guide-box');
+            const tempCv = document.createElement('canvas');
+            tempCv.width = guideBox.clientWidth;
+            tempCv.height = guideBox.clientHeight;
+            const tempCtx = tempCv.getContext('2d');
+
+            const mainW = cropCanvas.width;
+            const mainH = cropCanvas.height;
+            const boxW = tempCv.width;
+            const boxH = tempCv.height;
+            
+            const imgW = cropImg.width * cropScale;
+            const imgH = cropImg.height * cropScale;
+            const imgX = (mainW - imgW) / 2 + cropX;
+            const imgY = (mainH - imgH) / 2 + cropY;
+
+            const boxX = (mainW - boxW) / 2;
+            const boxY = (mainH - boxH) / 2;
+
+            tempCtx.drawImage(cropImg, imgX - boxX, imgY - boxY, imgW, imgH);
+
+            const res = tempCv.toDataURL();
+
+            if(cropTargetKey==='musicBg') config.musicBg=res;
+            else if(cropTargetKey==='wallpaper') config.wallpaper=res;
+            else if(cropTargetKey==='userAvatar') config.userAv=res;
+            else if(cropTargetKey==='charEdit') { document.getElementById('edit-c-av').style.backgroundImage=`url('${res}')`; document.getElementById('edit-c-av').dataset.temp=res; }
+            else if(cropTargetKey==='wxBannerEdit') { 
+                if(cropIsMe) {
+                     config.userBanner = res; 
+                     document.getElementById('wx-me-banner').style.backgroundImage=`url('${res}')`;
+                } else {
+                    const char = config.characters.find(c=>c.id===curWxId);
+                    if(char) { char.banner = res; saveConfig(); document.getElementById('wx-pf-banner').style.backgroundImage=`url('${res}')`; }
+                }
+            }
+            else if(cropTargetKey==='wxProfileAv'){
+                if(curWxId==='me'){ config.userAv = res; }
+                else { const c=config.characters.find(x=>x.id===curWxId); if(c) c.av=res; }
+                document.getElementById('wx-pf-av').style.backgroundImage=`url('${res}')`;
+            }
+            else if(cropTargetKey==='wxProfileBanner'){
+                if(curWxId==='me'){ config.userBanner = res; }
+                else { const c=config.characters.find(x=>x.id===curWxId); if(c) c.banner=res; }
+                document.getElementById('wx-pf-banner').style.backgroundImage=`url('${res}')`;
+            }
+            else if(cropTargetKey==='wxChatBg'){
+                const c=config.characters.find(x=>x.id===curWxId);
+                if(c) { c.chatSettings.bg = res; saveConfig(); renderWxChatStyle(); }
+            }
+
+            if(cropTargetKey!=='charEdit') saveConfig();
+            if(cropTargetKey==='userAvatar') applyConfig();
+            closeCropper();
+        }
+
+        // Core
+        function openApp(id){ document.querySelectorAll('.app-view').forEach(e=>e.classList.remove('active')); document.getElementById('app-'+id).classList.add('active'); if(id==='wechat') renderWxList(); }
+        function goHome(){ 
+            document.querySelectorAll('.app-view').forEach(e=>e.classList.remove('active')); 
+            closeFullPlayer(); closeSubSettings('ai'); closeSubSettings('music-style'); closeSubSettings('profile'); closeSubSettings('character-list'); closeSubSettings('character-edit'); 
+            closeWxChat(); closeWxProfile(); toggleQueue(false); closeMenu(); closeWxPublish();
+            closeSubSettings('wx-profile-edit'); closeSubSettings('wx-chat-settings');
+            document.getElementById('comment-popup').classList.remove('show');
+            document.getElementById('wx-sticker-panel').classList.remove('show');
+            closeChatGallery(); closeCommentPopup(); closeMentionSelector(); closeStickerPrompt();
+        }
+        function saveConfig(){ 
+            const urlInp = document.getElementById('inp-ai-url');
+            const keyInp = document.getElementById('inp-ai-key');
+            
+            config.aiUrl=urlInp.value; 
+            config.aiKey=keyInp.value; 
+            
+            if(!config.aiUrl) urlInp.style.border = "1px solid red"; else urlInp.style.border = "1px solid var(--border)";
+            if(!config.aiKey) keyInp.style.border = "1px solid red"; else keyInp.style.border = "1px solid var(--border)";
+            
+            config.aiModel=document.getElementById('inp-ai-model').value;
+            config.ytKey=document.getElementById('inp-yt-key').value; 
+            config.userName=document.getElementById('inp-user-name').value;
+            
+            localStorage.setItem('mz_v27_cfg', JSON.stringify(config)); applyConfig(); 
+        }
+        function applyConfig(){
+            document.documentElement.style.setProperty('--primary', config.themeColor);
+            document.getElementById('theme-color-picker').value = config.themeColor;
+
+            if(config.wallpaper) document.getElementById('wallpaper-layer').style.backgroundImage=`url('${config.wallpaper}')`;
+            ['st-u-av','tp-user-av','tg-user-av','wx-me-av-big','music-header-av'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.backgroundImage=`url('${config.userAv}')`; });
+            
+            // Active Character Link
+            const activeChar = config.characters.find(c=>c.id===config.activeCharId) || config.characters[0];
+            if(activeChar) { ['tp-char-av','tg-char-av'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.backgroundImage=`url('${activeChar.av}')`; }); }
+
+            document.getElementById('st-u-name').innerText=config.userName; document.getElementById('wx-me-name-big').innerText=config.userName;
+            if(config.userBanner) document.getElementById('wx-me-banner').style.backgroundImage=`url('${config.userBanner}')`;
+            if(config.userSignature) document.getElementById('wx-me-sig').innerText=config.userSignature;
+
+            document.getElementById('inp-user-name').value=config.userName;
+            document.getElementById('inp-ai-url').value=config.aiUrl; document.getElementById('inp-ai-key').value=config.aiKey; document.getElementById('inp-ai-model').value=config.aiModel; document.getElementById('inp-yt-key').value=config.ytKey;
+            
+            if(config.darkMode){ document.body.classList.remove('light-mode'); document.getElementById('theme-toggle').className="fas fa-toggle-on"; } else{ document.body.classList.add('light-mode'); document.getElementById('theme-toggle').className="fas fa-toggle-off"; }
+            
+            checkApiStatus();
+
+            const alpha = 1 - (config.musicOpacity);
+            document.getElementById('fp-bg-mask').style.background=`rgba(0,0,0,${alpha})`;
+            if(alpha < 0.3) document.getElementById('fp-bg-mask').style.backdropFilter = "blur(0px)"; else document.getElementById('fp-bg-mask').style.backdropFilter = "blur(20px)";
+            document.getElementById('opacity-label').innerText=Math.round(config.musicOpacity*100)+'%';
+            if(config.musicBg) document.getElementById('full-player').style.backgroundImage=`url('${config.musicBg}')`;
+        }
+
+        function checkApiStatus(){
+            const apiDot = document.querySelector('.api-dot');
+            const apiContainer = document.getElementById('api-indicator');
+            if(config.aiUrl && config.aiKey) {
+                apiDot.classList.add('on');
+                apiContainer.classList.remove('error');
+            } else {
+                apiDot.classList.remove('on');
+                apiContainer.classList.add('error');
+            }
+        }
+
+        function toggleTheme(){ config.darkMode=!config.darkMode; saveConfig(); }
+        function updateThemeColor(c){ config.themeColor = c; saveConfig(); }
+        function showToast(m){ const t=document.getElementById('toast-msg'); t.innerHTML=`<i class="fas fa-check"></i> ${m}`; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+        
+        function resizePhone(){ 
+            const h=window.innerHeight; 
+            document.getElementById('phone-scaler').style.transform=h<812?`scale(${h/812})`:'scale(1)'; 
+        }
+        window.onresize=resizePhone; resizePhone();
+
+        // Characters
+        function renderCharList(){
+            const c=document.getElementById('char-list-container'); c.innerHTML='';
+            config.characters.forEach(char=>{
+                const isActive = char.id === config.activeCharId;
+                const d=document.createElement('div'); d.className='st-item';
+                d.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><div class="st-avatar-preview" style="background-image:url('${char.av}');width:30px;height:30px;border-radius:50%;background-size:cover;"></div><div>${char.name}</div></div><div style="color:${isActive?'var(--primary)':'var(--text-sub)'}">${isActive?'使用中':'使用'}</div>`;
+                d.onclick=()=>{ 
+                    if(!isActive) {
+                        config.activeCharId = char.id;
+                        saveConfig(); 
+                        renderCharList();
+                    } else { 
+                        showToast('使用中'); 
+                        editCharacter(char.id); 
+                    } 
+                };
+                c.appendChild(d);
+            });
+        }
+        function addNewCharacter(){
+            const newId = 'c'+Date.now();
+            config.characters.push({id:newId, name:'新角色', av:'https://i.pravatar.cc/150?img=1', prompt:'', banner:'', signature:'', msgs:[], chatSettings:{}});
+            saveConfig(); renderCharList(); editCharacter(newId);
+        }
+        function editCharacter(id){
+            const targetId = id || curWxId;
+            if(!targetId) return;
+
+            editCharId = targetId; const char = config.characters.find(c=>c.id===targetId);
+            document.getElementById('inp-char-name').value = char.name; document.getElementById('inp-char-prompt').value = char.prompt;
+            document.getElementById('edit-c-av').style.backgroundImage = `url('${char.av}')`;
+            delete document.getElementById('edit-c-av').dataset.temp;
+            if(curWxId) closeWxProfile();
+            openSubSettings('character-edit');
+        }
+        function saveCharEdit(){
+            const char = config.characters.find(c=>c.id===editCharId);
+            char.name = document.getElementById('inp-char-name').value; char.prompt = document.getElementById('inp-char-prompt').value;
+            const tempAv = document.getElementById('edit-c-av').dataset.temp; if(tempAv) char.av = tempAv;
+            if(config.activeCharId === editCharId) config.activeCharId = editCharId;
+            saveConfig(); closeSubSettings('character-edit'); renderCharList(); renderWxList();
+        }
+        function deleteCharEdit(){
+            if(config.characters.length<=1) return alert("至少保留一個角色");
+            config.characters = config.characters.filter(c=>c.id!==editCharId);
+            config.activeCharId = config.characters[0].id; saveConfig(); closeSubSettings('character-edit'); renderCharList(); renderWxList();
+        }
+
+        // YouTube Search
+        async function searchYT(){
+            const q = document.getElementById('yt-search-val').value;
+            if(!q || !config.ytKey) return alert("設定 API Key");
+            try {
+                const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&type=video&q=${encodeURIComponent(q)}&key=${config.ytKey}`);
+                const data = await res.json();
+                const con = document.getElementById('yt-results'); con.innerHTML="";
+                if(data.items){
+                    data.items.forEach(i=>{
+                        const d=document.createElement('div'); d.className="song-item";
+                        d.onclick = () => playTempYT(i.id.videoId, i.snippet.title, i.snippet.channelTitle, i.snippet.thumbnails.default.url);
+                        d.innerHTML=`
+                            <div class="s-cover" style="background-image:url('${i.snippet.thumbnails.default.url}')"></div>
+                            <div class="s-info"><div class="s-title">${i.snippet.title}</div><div class="s-artist">${i.snippet.channelTitle}</div></div>
+                            <i class="fas fa-plus-circle" style="color:var(--primary); font-size:20px; padding:10px;" onclick="event.stopPropagation(); addToDB('${i.id.videoId}','${i.snippet.title}','${i.snippet.channelTitle}','${i.snippet.thumbnails.default.url}')"></i>
+                        `;
+                        con.appendChild(d);
+                    });
+                }
+            } catch(e){ alert("Error"); }
+        }
+        function playTempYT(vid, title, artist, cover){
+            queue = [{type:'yt', yid:vid, name:title, artist:artist, cover:cover, isFav:false}];
+            curIdx=0; play();
+        }
+        function addToDB(vid, title, artist, cover){
+            db.transaction(['songs'],'readwrite').objectStore('songs').add({type:'yt', yid:vid, name:title, artist:artist, cover:cover, isFav:false}).onsuccess=()=>{ showToast("已加入歌曲庫"); loadSongs(); };
+        }
+
+        // Music Logic
+        function loadSongs(){ db.transaction('songs').objectStore('songs').getAll().onsuccess=e=>{ songs=e.target.result; renderSongs(); }; }
+        function importAudio(files){
+            if(cropTargetKey==='wxBannerEdit' || cropTargetKey==='userAvatar') { initCrop({files:files}, cropTargetKey, cropIsMe); return; }
+            Array.from(files).forEach(f=>{
+                jsmediatags.read(f,{
+                    onSuccess:t=>{ let c=null; if(t.tags.picture){ let d=t.tags.picture.data, b=""; for(let i=0;i<d.length;i++)b+=String.fromCharCode(d[i]); c=`data:${t.tags.picture.format};base64,${window.btoa(b)}`; } db.transaction(['songs'],'readwrite').objectStore('songs').add({name:t.tags.title||f.name, artist:t.tags.artist||'Unknown', blob:f, cover:c, isFav:false}); setTimeout(loadSongs,100); },
+                    onError:()=>{ db.transaction(['songs'],'readwrite').objectStore('songs').add({name:f.name, artist:'Unknown', blob:f, cover:null, isFav:false}); setTimeout(loadSongs,100); }
+                });
+            });
+        }
+        function renderSongs(){
+            const con=document.getElementById('song-container'); con.innerHTML="";
+            const q=document.getElementById('lib-search').value.toLowerCase();
+            songs.forEach((s,i)=>{
+                if(s.name.toLowerCase().includes(q)){
+                    const d=document.createElement('div'); d.className="song-item";
+                    const cv=s.cover?`url('${s.cover}')`:'#eee';
+                    d.innerHTML=`<div class="s-cover" style="background-image:${cv};background-size:cover;"><div class="s-badge">${s.type==='yt'?'YT':''}</div></div><div class="s-info"><div class="s-title">${s.name}</div><div class="s-artist">${s.artist}</div></div><div class="s-right-actions"><i class="${s.isFav?'fas':'far'} fa-heart s-fav-btn ${s.isFav?'active':''}" onclick="event.stopPropagation(); toggleFav(${s.id})"></i><i class="fas fa-ellipsis-v" style="color:var(--text-sub);padding:10px;" onclick="event.stopPropagation(); openMenu(${s.id})"></i></div>`;
+                    d.onclick=()=>{ queue=songs; curIdx=i; playMode=0; updateModeIcon(); play(); };
+                    con.appendChild(d);
+                }
+            });
+        }
+
+        const audio=document.getElementById('audio-player');
+        function playAll(mode){
+            const q=document.getElementById('lib-search').value.toLowerCase();
+            const list=songs.filter(s=>s.name.toLowerCase().includes(q)); if(!list.length) return;
+            queue=[...list]; playMode=mode; updateModeIcon(); curIdx = mode===1 ? Math.floor(Math.random()*queue.length) : 0; play();
+        }
+        function play(){
+            const s=queue[curIdx]; if(!s)return;
+            audio.pause(); if(ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+            
+            document.getElementById('fp-cover').classList.add('loading');
+            document.getElementById('mp-cover').classList.add('loading');
+
+            if(s.type==='yt'){ if(ytPlayer) { ytPlayer.loadVideoById(s.yid); ytPlayer.playVideo(); } } 
+            else { if(s.blob) audio.src=URL.createObjectURL(s.blob); audio.play(); }
+            
+            isPlaying=true; updatePlayerUI();
+            addMusicChat(`正在播放：${s.name}`, false);
+        }
+        function togglePlay(){
+            const s=queue[curIdx]; if(!s)return;
+            if(isPlaying){ if(s.type==='yt') ytPlayer.pauseVideo(); else audio.pause(); }
+            else{ if(s.type==='yt') ytPlayer.playVideo(); else audio.play(); }
+            isPlaying=!isPlaying; updatePlayerUI();
+        }
+        function playNext(){ if(!queue.length)return; if(playMode===1) curIdx=Math.floor(Math.random()*queue.length); else curIdx=(curIdx+1)%queue.length; play(); }
+        function playPrev(){ if(!queue.length)return; curIdx=(curIdx-1+queue.length)%queue.length; play(); }
+        function toggleMode(){ playMode=(playMode+1)%2; updateModeIcon(); }
+        function updateModeIcon(){ const btn=document.getElementById('btn-mode'); if(playMode===1) { btn.className="fas fa-random"; btn.style.color="var(--primary)"; } else { btn.className="fas fa-redo"; btn.style.color="var(--text-sub)"; } }
+        
+        function updatePlayerUI(){
+            const s=queue[curIdx]; if(!s)return;
+            const cv=s.cover?`url('${s.cover}')`:'#333';
+            document.getElementById('mp-title').innerText=s.name; document.getElementById('mp-cover').style.backgroundImage=cv;
+            document.getElementById('mini-player').classList.add('show'); document.getElementById('mp-btn').className=isPlaying?"fas fa-pause":"fas fa-play";
+            document.getElementById('fp-title').innerText=s.name; document.getElementById('fp-artist').innerText=s.artist;
+            document.getElementById('fp-cover').style.backgroundImage=cv; document.getElementById('fp-play-btn').className=isPlaying?"fas fa-pause-circle":"fas fa-play-circle";
+            
+            const h=document.getElementById('fp-heart');
+            if(s.isFav) { h.className="fas fa-heart s-fav-btn active pop-anim"; h.style.color="var(--primary)"; }
+            else { h.className="far fa-heart s-fav-btn"; h.style.color="#ccc"; }
+            setTimeout(()=>h.classList.remove('pop-anim'), 400);
+            
+            if(isPlaying) document.getElementById('vinyl').classList.add('playing'); else document.getElementById('vinyl').classList.remove('playing');
+            renderQueue();
+        }
+        function toggleFav(id){
+            const tx=db.transaction(['songs'],'readwrite'); const st=tx.objectStore('songs');
+            st.get(id).onsuccess=e=>{
+                const s=e.target.result; s.isFav=!s.isFav; st.put(s); 
+                const qItem = queue.find(x=>x.id===id); if(qItem) qItem.isFav=s.isFav;
+                const sItem = songs.find(x=>x.id===id); if(sItem) sItem.isFav=s.isFav;
+                loadSongs(); if(queue[curIdx]?.id===id) updatePlayerUI();
+            };
+        }
+        function toggleFavCurrent(){ if(queue[curIdx]) toggleFav(queue[curIdx].id); }
+        function openMenu(id){ menuTargetId=id; document.getElementById('as-menu').classList.add('show'); }
+        function closeMenu(){ document.getElementById('as-menu').classList.remove('show'); }
+        function deleteSong(){
+            if(menuTargetId){ 
+                db.transaction(['songs'],'readwrite').objectStore('songs').delete(menuTargetId).onsuccess=()=>{ 
+                    showToast("已刪除"); closeMenu(); loadSongs(); 
+                }; 
+            }
+        }
+        function toggleQueue(show){
+            const el=document.getElementById('queue-view'), bd=document.getElementById('queue-backdrop');
+            if(show){ el.classList.add('show'); bd.classList.add('show'); renderQueue(); } else { el.classList.remove('show'); bd.classList.remove('show'); }
+        }
+        function renderQueue(){
+            const c=document.getElementById('queue-list'); c.innerHTML="";
+            queue.forEach((s,i)=>{
+                const d=document.createElement('div'); d.className="queue-item";
+                if(i===curIdx) { d.classList.add('active'); d.style.color="var(--primary)"; }
+                d.innerText=`${i+1}. ${s.name}`;
+                d.onclick=()=>{ curIdx=i; play(); };
+                c.appendChild(d);
+            });
+        }
+        function openFullPlayer(){ document.getElementById('full-player').classList.add('show'); }
+        function closeFullPlayer(){ document.getElementById('full-player').classList.remove('show'); }
+        function scrollToTogether(){ document.getElementById('player-scroll-area').scrollTo({top:1000, behavior:'smooth'}); }
+        
+        function openSubSettings(id){ 
+            if(id==='character-list') renderCharList();
+            document.getElementById('sub-'+id).classList.add('show'); 
+        }
+        function closeSubSettings(id){ document.getElementById('sub-'+id).classList.remove('show'); }
+        function updateMusicOpacity(v){ config.musicOpacity=v/100; saveConfig(); }
+        function resetMusicStyle(){ config.musicBg=''; config.musicOpacity=0.2; saveConfig(); showToast("已重置"); }
+
+        async function callAI(p, sysPrompt, allowSegment=true){
+            if(!config.aiUrl || !config.aiKey) return "設定 API";
+            try{
+                // Req 3: Lovemo Style Segmented Response
+                let instructions = sysPrompt || '';
+                if(allowSegment){
+                    instructions += ` You are chatting in a messaging app. Please provide your response in short, segmented bubbles to simulate a real person typing. Use '|||' to separate each segment/bubble. Do NOT use asterisks (*) for actions or expressions unless it's a significant physical interaction (e.g. *hugs*). Keep the tone natural and conversational.`;
+                } else {
+                    instructions += ` You are commenting on a social media post. Do NOT use segmented bubbles. Write one single, complete comment block. Do NOT use '|||'.`;
+                }
+                
+                const msgs = [{role:"system",content:instructions}, {role:"user",content:p}];
+                const r=await fetch(config.aiUrl+'/chat/completions',{ method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${config.aiKey}`}, body:JSON.stringify({model:config.aiModel, messages:msgs}) });
+                const d=await r.json(); return d.choices[0].message.content;
+            }catch(e){ return "Err"; }
+        }
+        async function sendMusicChat(){
+            const inp=document.getElementById('mc-in'); const t=inp.value.trim(); if(!t)return;
+            addMusicChat(t,true); inp.value=''; 
+            const activeChar = config.characters.find(c=>c.id===config.activeCharId);
+            
+            // Req 1: Music Typing Indicator
+            document.getElementById('mc-typing-indicator').style.display='block';
+            document.getElementById('mc-hist').scrollTop = document.getElementById('mc-hist').scrollHeight;
+
+            const r=await callAI(t, activeChar.prompt); 
+            
+            document.getElementById('mc-typing-indicator').style.display='none';
+
+            if(r && r !== "Err") {
+                const segments = r.split('|||').map(s => s.trim()).filter(s => s);
+                segments.forEach((seg, index) => {
+                    setTimeout(() => {
+                        addMusicChat(seg,false);
+                    }, index * 1500); 
+                });
+            }
+        }
+        function addMusicChat(t,me){ const b=document.getElementById('mc-hist'); const d=document.createElement('div'); d.className=`mc-bubble ${me?'me':''}`; d.innerText=t; b.appendChild(d); b.scrollTop=b.scrollHeight; }
+
+        // WeChat
+        function switchWxTab(i){
+            document.querySelectorAll('.wx-tab').forEach((e,x)=>e.classList.toggle('active',x===i));
+            ['chats','contacts','moments','me'].forEach((v,x)=>document.getElementById('wx-view-'+v).style.display=x===i?'flex':'none');
+            if(i===0) renderWxList();
+        }
+        function renderWxList(){
+            const c=document.getElementById('wx-chat-list'); const contactList=document.getElementById('wx-contact-list');
+            c.innerHTML=''; contactList.innerHTML='';
+            
+            let sortedChars = [...config.characters];
+            sortedChars.sort((a,b) => {
+                const timeA = a.msgs && a.msgs.length ? a.msgs[a.msgs.length-1].time || 0 : 0;
+                const timeB = b.msgs && b.msgs.length ? b.msgs[b.msgs.length-1].time || 0 : 0;
+                return timeB - timeA;
+            });
+
+            config.characters.forEach(char=>{
+                const row = document.createElement('div'); row.className='wx-row';
+                row.innerHTML=`<div class="wx-av" style="background-image:url('${char.av}')"></div><div class="wx-name">${char.name}</div>`;
+                row.onclick=()=>openWxProfile(char.id); contactList.appendChild(row);
+            });
+
+            sortedChars.forEach(char=>{
+                let lastMsg = "開始聊天...";
+                if(char.msgs && char.msgs.length) {
+                    const lm = char.msgs[char.msgs.length-1];
+                    lastMsg = lm.type === 'img' ? '[圖片]' : (lm.type==='sticker' ? '[貼圖]' : lm.txt);
+                }
+                
+                const chatRow = document.createElement('div'); chatRow.className='wx-row';
+                chatRow.innerHTML=`<div class="wx-av" style="background-image:url('${char.av}')"></div><div style="flex:1; min-width:0;"><div class="wx-name">${char.name}</div><div class="wx-msg">${lastMsg}</div></div>`;
+                chatRow.onclick=()=>openWxChat(char.id); c.appendChild(chatRow);
+            });
+        }
+        function openWxProfile(id){
+            curWxId = id; 
+            const isMe = id === 'me';
+            const char = isMe ? {name: config.userName, av: config.userAv, banner: config.userBanner, signature: config.userSignature, id:'me'} : config.characters.find(c=>c.id===id);
+            
+            document.getElementById('wx-pf-av').style.backgroundImage=`url('${char.av}')`;
+            if(char.banner) document.getElementById('wx-pf-banner').style.backgroundImage=`url('${char.banner}')`;
+            else document.getElementById('wx-pf-banner').style.backgroundImage='none';
+            document.getElementById('wx-pf-name').innerText=char.name;
+            document.getElementById('wx-pf-sig').innerText=char.signature || "沒有簽名";
+            
+            if(isMe) document.getElementById('wx-pf-sig').onclick = editSignature;
+            else document.getElementById('wx-pf-sig').onclick = null;
+            
+            const actDiv = document.getElementById('wx-pf-actions');
+            if(isMe) actDiv.innerHTML = `<div class="wx-pf-btn" onclick="initCrop(document.getElementById('hidden-file-input'), 'wxBannerEdit', true)">更換封面</div>`;
+            else actDiv.innerHTML = `<div class="wx-pf-btn" onclick="openWxChatFromProfile()">發消息</div>`;
+
+            document.getElementById('wx-profile-view').classList.add('show');
+            renderWxMoments(char.id, 'wx-pf-moments');
+        }
+        function closeWxProfile(){ document.getElementById('wx-profile-view').classList.remove('show'); }
+        function openWxChatFromProfile(){ closeWxProfile(); openWxChat(curWxId); }
+        function openWxChat(id){ 
+            curWxId=id; 
+            const f=config.characters.find(x=>x.id===id); 
+            document.getElementById('wx-room-title').innerText=f.name; 
+            renderWxChatStyle();
+            renderWxRoom(f); 
+            document.getElementById('wx-room').classList.add('show'); 
+        }
+        function closeWxChat(){ 
+            document.getElementById('wx-room').classList.remove('show'); curWxId=null; renderWxList(); 
+            document.getElementById('wx-sticker-panel').classList.remove('show');
+            document.getElementById('sticker-overlay').classList.remove('show');
+            
+            const bar = document.getElementById('wx-input-bar');
+            bar.style.bottom = "0"; 
+            
+            document.getElementById('wx-typing-indicator').style.display = 'none';
+            cancelQuote(); // clear pending quote
+        }
+        function renderWxRoom(f){ 
+            const b=document.getElementById('wx-room-hist'); b.innerHTML=''; 
+            (f.msgs||[]).forEach(m=>addWxBubble(m.txt,m.me,f.av,m.type, m.quote)); 
+            document.getElementById('wx-typing-av').style.backgroundImage = `url('${f.av}')`;
+            b.scrollTop = b.scrollHeight; 
+        }
+        
+        function addWxBubble(content, me, av, type='text', quoteText=null){
+            const b=document.getElementById('wx-room-hist'); const r=document.createElement('div'); r.className=`wx-bubble-row ${me?'me':''}`;
+            
+            let quoteHtml = '';
+            if(quoteText){
+                quoteHtml = `<div class="wx-quote-box">${quoteText}</div>`;
+            }
+
+            let inner = content;
+            if(type === 'img') inner = `<img src="${content}" onclick="viewImageFull('${content}')">`;
+            else if(type === 'sticker') inner = `<div style="font-size:40px;">${content}</div>`;
+            
+            const bg = me ? curChatStyle.bubbleMe : curChatStyle.bubbleOther;
+            const op = me ? curChatStyle.bubbleMeOp : curChatStyle.bubbleOtherOp;
+            const txtCol = me ? curChatStyle.textMe : curChatStyle.textOther;
+            const fontSize = curChatStyle.fontSize || 15;
+
+            const bubbleStyle = `background:${bg}; opacity:${op}; color:${txtCol}; font-size:${fontSize}px;`;
+
+            r.innerHTML=`<div class="wx-bubble-av" style="background-image:url('${me?config.userAv:av}')"></div><div class="wx-bubble-content" style="${type==='text'?bubbleStyle:'background:transparent;border:none;padding:0;'}">${quoteHtml}${inner}</div>`;
+            
+            r.querySelector('.wx-bubble-content').onclick = (e) => {
+                if(type === 'text') setQuote(content); 
+                e.stopPropagation();
+            };
+
+            b.appendChild(r); b.scrollTop=b.scrollHeight;
+        }
+        
+        function setQuote(text){
+            pendingQuote = text;
+            document.getElementById('wx-quote-txt').innerText = `引用: ${text}`;
+            document.getElementById('wx-pending-quote').classList.add('show');
+        }
+        function cancelQuote(){
+            pendingQuote = null;
+            document.getElementById('wx-pending-quote').classList.remove('show');
+        }
+
+        async function sendWxMsg(){
+            const inp=document.getElementById('wx-in'); const t=inp.value.trim(); if(!t||!curWxId)return;
+            const f=config.characters.find(x=>x.id===curWxId); if(!f.msgs) f.msgs=[];
+            
+            f.msgs.push({me:true, txt:t, type:'text', time: Date.now(), quote: pendingQuote}); 
+            addWxBubble(t, true, f.av, 'text', pendingQuote); 
+            
+            inp.value='';
+            cancelQuote(); 
+            
+            const titleEl = document.getElementById('wx-room-title');
+            const originalTitle = f.name;
+            titleEl.innerText = "對方正在輸入...";
+            const typingBubble = document.getElementById('wx-typing-indicator');
+            typingBubble.style.display = 'flex';
+            document.getElementById('wx-room-hist').scrollTop = document.getElementById('wx-room-hist').scrollHeight; 
+
+            // AI Reply
+            const rawResp = await callAI(t, f.prompt); 
+            
+            titleEl.innerText = originalTitle;
+            typingBubble.style.display = 'none';
+
+            if(rawResp && rawResp !== "Err") {
+                const segments = rawResp.split('|||').map(s => s.trim()).filter(s => s);
+                segments.forEach((seg, index) => {
+                    setTimeout(() => {
+                        f.msgs.push({me:false, txt:seg, type:'text', time: Date.now()}); 
+                        addWxBubble(seg, false, f.av, 'text');
+                        saveConfig(); 
+                    }, index * 1500); 
+                });
+            } else {
+                saveConfig();
+            }
+        }
+        async function sendWxMsgFromSticker(){
+            const inp=document.getElementById('sticker-input-field'); const t=inp.value.trim(); if(!t||!curWxId)return;
+            const f=config.characters.find(x=>x.id===curWxId); if(!f.msgs) f.msgs=[];
+            f.msgs.push({me:true,txt:t,type:'text', time: Date.now()}); addWxBubble(t,true,f.av,'text'); inp.value='';
+            
+            // Just simulate send logic without re-prompting AI for sticker unless wanted
+            const r=await callAI(t, f.prompt); 
+            if(r && r !== "Err") {
+                const segments = r.split('|||').map(s => s.trim()).filter(s => s);
+                segments.forEach((seg, index) => {
+                    setTimeout(() => {
+                        f.msgs.push({me:false, txt:seg, type:'text', time: Date.now()}); 
+                        addWxBubble(seg, false, f.av, 'text');
+                        saveConfig();
+                    }, index * 1500);
+                });
+            } else {
+                saveConfig();
+            }
+        }
+        document.getElementById('wx-in').addEventListener('keydown',e=>{if(e.key==='Enter')sendWxMsg();});
+        
+        function sendWxImg(input){
+            if(input.files && input.files[0] && curWxId){
+                 const r = new FileReader();
+                 r.onload = e=>{
+                     const f=config.characters.find(x=>x.id===curWxId); if(!f.msgs) f.msgs=[];
+                     f.msgs.push({me:true,txt:e.target.result,type:'img', time: Date.now()}); 
+                     addWxBubble(e.target.result,true,f.av,'img');
+                     saveConfig();
+                 };
+                 r.readAsDataURL(input.files[0]);
+            }
+            input.value = '';
+        }
+        
+        function toggleStickers(){ 
+            const panel = document.getElementById('wx-sticker-panel');
+            const overlay = document.getElementById('sticker-overlay');
+            const bar = document.getElementById('wx-input-bar');
+            
+            panel.classList.toggle('show'); 
+            overlay.classList.toggle('show');
+            
+            if(panel.classList.contains('show')) {
+                bar.style.bottom = "320px"; 
+            } else {
+                bar.style.bottom = "0"; 
+            }
+            renderStickers(); 
+        }
+        
+        function sendSticker(s){
+            if(!curWxId) return;
+            const f=config.characters.find(x=>x.id===curWxId); if(!f.msgs) f.msgs=[];
+            
+            // Handle new Sticker object type vs legacy string
+            let content = s;
+            let type = 'sticker';
+            let meaning = '';
+
+            if(typeof s === 'object'){
+                content = s.content;
+                if(s.type === 'img') type = 'img'; 
+                meaning = s.meaning;
+            }
+
+            f.msgs.push({me:true, txt:content, type:type, time: Date.now()}); 
+            addWxBubble(content, true, f.av, type);
+            
+            // Trigger AI response to sticker meaning
+            if(meaning){
+                setTimeout(async () => {
+                    const sys = `User sent a sticker meaning: "${meaning}". Reply naturally.`;
+                    const r = await callAI("", f.prompt + " " + sys);
+                    if(r && r !== "Err") {
+                        const segments = r.split('|||').map(s => s.trim()).filter(s => s);
+                        segments.forEach((seg, index) => {
+                            setTimeout(() => {
+                                f.msgs.push({me:false, txt:seg, type:'text', time: Date.now()}); 
+                                addWxBubble(seg, false, f.av, 'text');
+                                saveConfig();
+                            }, index * 1500);
+                        });
+                    }
+                }, 500);
+            }
+
+            saveConfig();
+        }
+
+        // Sticker Add Logic
+        function renderStickers(){
+            const tabs = document.getElementById('sticker-tabs');
+            const grid = document.getElementById('sticker-grid');
+            tabs.innerHTML = ''; grid.innerHTML = '';
+            
+            config.stickers.forEach((cat, i)=>{
+                const t = document.createElement('div'); t.className = 'sticker-tab'; t.innerText = cat.icon;
+                t.onclick = () => { renderStickerGrid(i); document.querySelectorAll('.sticker-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); };
+                if(i===tempStickerGroupIdx) t.classList.add('active');
+                tabs.appendChild(t);
+            });
+            renderStickerGrid(tempStickerGroupIdx);
+        }
+        function renderStickerGrid(idx){
+            tempStickerGroupIdx = idx;
+            const grid = document.getElementById('sticker-grid'); grid.innerHTML = '';
+            const cat = config.stickers[idx];
+            
+            const add = document.createElement('div'); add.className='sticker-add-btn'; add.innerText='+';
+            add.onclick = () => {
+                const type = prompt("1: 文字/Emoji, 2: 圖片");
+                if(type === '1') {
+                    const e = prompt("輸入 Emoji 或文字");
+                    if(e) { cat.items.push(e); saveConfig(); renderStickerGrid(idx); }
+                } else if(type === '2'){
+                    document.getElementById('sticker-file-input').click();
+                }
+            };
+            grid.appendChild(add);
+
+            cat.items.forEach(s => {
+                const d = document.createElement('div'); d.className = 'sticker-item';
+                
+                if(typeof s === 'object' && s.type === 'img'){
+                    d.style.backgroundImage = `url('${s.content}')`;
+                    d.innerText = '';
+                } else {
+                    d.innerText = (typeof s === 'string') ? s : s.content;
+                }
+                
+                d.onclick = () => sendSticker(s); 
+                grid.appendChild(d);
+            });
+        }
+        
+        function addStickerImage(input){
+            if(input.files && input.files[0]){
+                const r = new FileReader();
+                r.onload = e => {
+                    const meaning = prompt("這張貼圖代表什麼意思？(讓AI讀懂)");
+                    if(meaning){
+                        config.stickers[tempStickerGroupIdx].items.push({
+                            type: 'img',
+                            content: e.target.result,
+                            meaning: meaning
+                        });
+                        saveConfig();
+                        renderStickerGrid(tempStickerGroupIdx);
+                    }
+                };
+                r.readAsDataURL(input.files[0]);
+            }
+            input.value = '';
+        }
+
+        // Chat Style Settings
+        let curChatStyle = { bg:'', bubbleMe:'var(--msg-me)', bubbleMeOp:1, bubbleOther:'var(--wx-card)', bubbleOtherOp:1, textMe:'#000000', textOther:'#ffffff', fontSize:15 };
+        let tempChatStyle = {};
+
+        function renderWxChatStyle(){
+            const f=config.characters.find(x=>x.id===curWxId);
+            const s = f.chatSettings || {};
+            curChatStyle = {
+                bg: s.bg || '',
+                bubbleMe: s.bubbleMe || 'var(--msg-me)',
+                bubbleMeOp: s.bubbleMeOp || 1,
+                bubbleOther: s.bubbleOther || 'var(--wx-card)',
+                bubbleOtherOp: s.bubbleOtherOp || 1,
+                textMe: s.textMe || '#000000',
+                textOther: s.textOther || '#ffffff',
+                fontSize: s.fontSize || 15
+            };
+            
+            const room = document.getElementById('wx-room');
+            if(curChatStyle.bg) room.style.backgroundImage = `url('${curChatStyle.bg}')`;
+            else room.style.backgroundImage = 'none';
+        }
+
+        function openWxChatSettings(){ 
+            openSubSettings('wx-chat-settings'); 
+            renderWxChatStyle(); 
+            tempChatStyle = {...curChatStyle}; 
+            initChatSettingsUI(); 
+        }
+        
+        function saveWxChatSettings(){
+            curChatStyle = {...tempChatStyle};
+            const f=config.characters.find(x=>x.id===curWxId);
+            f.chatSettings = {
+                bg: curChatStyle.bg,
+                bubbleMe: curChatStyle.bubbleMe,
+                bubbleMeOp: curChatStyle.bubbleMeOp,
+                bubbleOther: curChatStyle.bubbleOther,
+                bubbleOtherOp: curChatStyle.bubbleOtherOp,
+                textMe: curChatStyle.textMe,
+                textOther: curChatStyle.textOther,
+                fontSize: curChatStyle.fontSize
+            };
+            saveConfig(); renderWxChatStyle();
+            renderWxRoom(f);
+            closeSubSettings('wx-chat-settings');
+        }
+        
+        function resetWxChatSettings(){
+            tempChatStyle = { bg:'', bubbleMe:'var(--msg-me)', bubbleMeOp:1, bubbleOther:'var(--wx-card)', bubbleOtherOp:1, textMe:'#000000', textOther:'#ffffff', fontSize:15 };
+            saveWxChatSettings();
+        }
+
+        function updateTempColor(key, val){
+            tempChatStyle[key] = val;
+        }
+
+        function initChatSettingsUI(){
+            const bgMe = tempChatStyle.bubbleMe.startsWith('#') ? tempChatStyle.bubbleMe : '#07c160';
+            const bgOther = tempChatStyle.bubbleOther.startsWith('#') ? tempChatStyle.bubbleOther : '#ffffff';
+            
+            document.getElementById('cp-me-bg').value = bgMe;
+            document.getElementById('lbl-me-bg').style.backgroundColor = bgMe;
+            
+            document.getElementById('cp-other-bg').value = bgOther;
+            document.getElementById('lbl-other-bg').style.backgroundColor = bgOther;
+            
+            document.getElementById('cp-me-text').value = tempChatStyle.textMe;
+            document.getElementById('lbl-me-text').style.backgroundColor = tempChatStyle.textMe;
+            
+            document.getElementById('cp-other-text').value = tempChatStyle.textOther;
+            document.getElementById('lbl-other-text').style.backgroundColor = tempChatStyle.textOther;
+            
+            document.getElementById('rng-me-op').value = tempChatStyle.bubbleMeOp * 100;
+            document.getElementById('rng-other-op').value = tempChatStyle.bubbleOtherOp * 100;
+            document.getElementById('rng-font-size').value = tempChatStyle.fontSize;
+        }
+
+        function viewChatImages(){
+            document.getElementById('chat-img-gallery').classList.add('show');
+            const grid = document.getElementById('chat-gallery-grid'); grid.innerHTML = '';
+            const f=config.characters.find(x=>x.id===curWxId);
+            if(f && f.msgs){
+                f.msgs.filter(m=>m.type==='img').forEach(m=>{
+                    const d = document.createElement('div'); d.className='img-grid-item'; d.style.backgroundImage=`url('${m.txt}')`;
+                    d.onclick = () => { showToast("圖片預覽"); };
+                    grid.appendChild(d);
+                });
+            }
+            if(grid.innerHTML === '') grid.innerHTML = '<div style="color:#888; grid-column:span 3; text-align:center;">無圖片</div>';
+        }
+        function closeChatGallery(){ document.getElementById('chat-img-gallery').classList.remove('show'); }
+
+        // Profile Editing
+        function openWxProfileSettings(){ 
+            if(curWxId === 'me') {
+                document.getElementById('inp-wx-sig-edit').value = config.userSignature;
+            } else {
+                const c = config.characters.find(x=>x.id===curWxId);
+                document.getElementById('inp-wx-sig-edit').value = c.signature || '';
+            }
+            openSubSettings('wx-profile-edit'); 
+        }
+        function saveWxProfileSettings(){
+             const s = document.getElementById('inp-wx-sig-edit').value;
+             if(curWxId === 'me') { config.userSignature = s; }
+             else { const c = config.characters.find(x=>x.id===curWxId); c.signature = s; }
+             saveConfig(); closeSubSettings('wx-profile-edit'); openWxProfile(curWxId);
+        }
+
+        // Moments
+        function renderWxMoments(filterId = null, targetId = 'wx-moments-list'){
+            const mBox = document.getElementById(targetId);
+            mBox.innerHTML = "";
+            let allPosts = [];
+            
+            if(config.moments) {
+                config.moments.forEach(m => {
+                    let isMe = m.ownerId === 'me' || !m.ownerId; 
+                    let ownerName = isMe ? config.userName : (config.characters.find(c=>c.id===m.ownerId)?.name || "Unknown");
+                    let ownerAv = isMe ? config.userAv : (config.characters.find(c=>c.id===m.ownerId)?.av || "");
+                    
+                    allPosts.push({...m, name: ownerName, av: ownerAv, isMe: isMe});
+                });
+            }
+            allPosts.sort((a,b)=>b.time-a.time);
+
+            if(filterId){
+                if(filterId === 'me') allPosts = allPosts.filter(p=>p.isMe);
+                else allPosts = allPosts.filter(p=>p.ownerId === filterId);
+            }
+
+            allPosts.forEach(p => {
+                let imgHtml = '';
+                if(p.imgs && p.imgs.length > 0){
+                    imgHtml = `<div class="wx-moment-imgs">` + p.imgs.map(src=>`<div class="wx-moment-img" onclick="event.stopPropagation();" style="background-image:url('${src}')"></div>`).join('') + `</div>`;
+                }
+                
+                if(!p.likes) p.likes = [];
+                if(!p.comments) p.comments = [];
+
+                const likeStr = p.likes.length ? `<div class="wx-likes show"><i class="far fa-heart"></i> ${p.likes.join(', ')}</div>` : `<div class="wx-likes" id="like-box-${p.id}"></div>`;
+                
+                let commentStr = '';
+                if(p.comments.length){
+                    commentStr = `<div class="wx-comments show">` + p.comments.map(c=>`<div class="wx-comment-row"><div class="wx-c-name">${c.user}:</div><div class="wx-c-txt">${c.txt}</div></div>`).join('') + `</div>`;
+                } else {
+                    commentStr = `<div class="wx-comments" id="comm-box-${p.id}"></div>`;
+                }
+
+                const deleteBtn = p.isMe ? `<span style="font-size:12px; color:#576b95; margin-left:10px; cursor:pointer;" onclick="event.stopPropagation(); deletePost('${p.id}')">刪除</span>` : '';
+
+                const div = document.createElement('div'); div.style="padding:15px; border-bottom:1px solid var(--border);";
+                div.innerHTML = `
+                    <div style="display:flex; gap:10px;">
+                        <div class="wx-av" style="background-image:url('${p.av}'); width:40px; height:40px; margin:0;"></div>
+                        <div style="flex:1;">
+                            <div style="font-weight:bold; color:#576b95; margin-bottom:5px;">${p.name}</div>
+                            <div style="font-size:15px; margin-bottom:5px;">${p.txt}</div>
+                            ${imgHtml}
+                            <div class="wx-action-area">
+                                <div style="display:flex; align-items:center;">
+                                    <span class="wx-time">${new Date(p.time).toLocaleString()}</span>
+                                    ${deleteBtn}
+                                </div>
+                                <div class="wx-pop-btn" onclick="event.stopPropagation(); openCommentPopup('${p.id}')"><i class="far fa-comment-dots"></i></div>
+                            </div>
+                            ${likeStr}
+                            ${commentStr}
+                        </div>
+                    </div>`;
+                mBox.appendChild(div);
+            });
+            if(allPosts.length === 0) mBox.innerHTML = "<div style='text-align:center; margin-top:20px; color:var(--text-sub);'>暫無動態</div>";
+        }
+        
+        function openWxPublish(){
+            pubImgs = [];
+            mentionedCharIds = [];
+            document.getElementById('wx-pub-txt').value = '';
+            document.getElementById('wx-pub-loc').value = '';
+            document.getElementById('wx-pub-mention-txt').innerText = "提醒誰看";
+            document.querySelectorAll('.wx-pub-img').forEach(e=>e.remove());
+            document.getElementById('wx-publish-view').classList.add('show');
+        }
+        function closeWxPublish(){ document.getElementById('wx-publish-view').classList.remove('show'); }
+        function handlePubImgs(input){
+            if(input.files){
+                Array.from(input.files).forEach(file=>{
+                    const r = new FileReader();
+                    r.onload = e=>{
+                        pubImgs.push(e.target.result);
+                        const d = document.createElement('div'); d.className='wx-pub-img'; d.style.backgroundImage=`url('${e.target.result}')`;
+                        const grid = document.getElementById('wx-pub-grid');
+                        grid.insertBefore(d, grid.lastElementChild);
+                    }
+                    r.readAsDataURL(file);
+                });
+            }
+            input.value = '';
+        }
+        function doPublish(){
+            let t = document.getElementById('wx-pub-txt').value;
+            
+            // Add @CharacterName to text
+            const mentionText = mentionedCharIds.map(id => {
+                const c = config.characters.find(x => x.id === id);
+                return c ? `@${c.name}` : '';
+            }).join(' ');
+            if(mentionText) t = t + ' ' + mentionText;
+
+            if(!t && pubImgs.length===0) return;
+            if(!config.moments) config.moments = [];
+            
+            const newPost = {
+                id: 'm'+Date.now(),
+                ownerId: 'me',
+                txt: t, 
+                imgs: [...pubImgs], 
+                time: Date.now(),
+                likes: [],
+                comments: []
+            };
+
+            config.moments.push(newPost);
+            saveConfig(); renderWxMoments();
+            closeWxPublish(); showToast("發佈成功");
+            
+            mentionedCharIds.forEach(cid => {
+                const char = config.characters.find(c => c.id === cid);
+                if(char) {
+                    setTimeout(async () => {
+                        const sys = `User mentioned you in a post: "${t}". Reply to them.`;
+                        const reply = await callAI("Reply now.", sys, false); // No segments in moments
+                        if(reply && reply !== "Err") {
+                            newPost.comments.push({user: char.name, txt: reply});
+                            saveConfig(); renderWxMoments();
+                        }
+                    }, 2000 + Math.random()*2000);
+                }
+            });
+            
+            if(mentionedCharIds.length === 0) autoCommentOnPost(newPost);
+        }
+
+        function openMentionSelector(){
+            const list = document.getElementById('mention-list');
+            list.innerHTML = '';
+            config.characters.forEach(char => {
+                const d = document.createElement('div');
+                d.style.padding = '15px'; d.style.borderBottom = '1px solid var(--border)'; d.style.display='flex'; d.style.alignItems='center'; d.style.cursor='pointer';
+                d.innerHTML = `<div style="width:30px;height:30px;border-radius:50%;background-image:url('${char.av}');background-size:cover;margin-right:10px;"></div><div style="flex:1;color:var(--text-main);">${char.name}</div>`;
+                
+                if(mentionedCharIds.includes(char.id)) d.style.backgroundColor = 'rgba(85, 208, 255, 0.2)';
+                
+                d.onclick = () => {
+                    if(mentionedCharIds.includes(char.id)) mentionedCharIds = mentionedCharIds.filter(id => id !== char.id);
+                    else mentionedCharIds.push(char.id);
+                    openMentionSelector();
+                };
+                list.appendChild(d);
+            });
+            document.getElementById('mention-overlay').classList.add('show');
+        }
+        function closeMentionSelector(){
+            document.getElementById('mention-overlay').classList.remove('show');
+            const txt = mentionedCharIds.length > 0 ? `已選擇 ${mentionedCharIds.length} 位` : "提醒誰看";
+            document.getElementById('wx-pub-mention-txt').innerText = txt;
+        }
+
+        // Social Logic
+        function deletePost(id){
+            if(confirm("確定刪除這條朋友圈嗎？")){
+                config.moments = config.moments.filter(m=>m.id !== id);
+                saveConfig(); renderWxMoments();
+                if(curWxId) openWxProfile(curWxId);
+            }
+        }
+        function openCommentPopup(id){
+            activeCommentPostId = id;
+            document.getElementById('comment-popup').classList.add('show');
+            document.getElementById('comment-backdrop').classList.add('show');
+            document.getElementById('comm-in').focus();
+        }
+        function closeCommentPopup(){
+            document.getElementById('comment-popup').classList.remove('show');
+            document.getElementById('comment-backdrop').classList.remove('show');
+        }
+        function submitComment(){
+            const txt = document.getElementById('comm-in').value;
+            if(!txt || !activeCommentPostId) return;
+            
+            const post = config.moments.find(m=>m.id === activeCommentPostId);
+            if(post){
+                post.comments.push({user: config.userName, txt: txt});
+                saveConfig(); renderWxMoments();
+                if(curWxId) openWxProfile(curWxId);
+
+                // If post belongs to a character, trigger reply
+                if(post.ownerId !== 'me'){
+                    const char = config.characters.find(c => c.id === post.ownerId);
+                    if(char && config.aiKey) {
+                        setTimeout(async () => {
+                            const sys = `User commented on your status "${post.txt}": "${txt}". Reply to them concisely.`;
+                            const reply = await callAI("Reply now.", sys, false); // Disable segment for comments
+                            if(reply && reply !== "Err") {
+                                post.comments.push({user: char.name, txt: reply});
+                                saveConfig(); renderWxMoments();
+                            }
+                        }, 3000);
+                    }
+                }
+            }
+            document.getElementById('comm-in').value = '';
+            closeCommentPopup();
+        }
+
+        async function autoCommentOnPost(post){
+            if(!config.aiKey || config.characters.length === 0) return;
+            
+            setTimeout(async () => {
+                const char = config.characters[Math.floor(Math.random()*config.characters.length)];
+                const sys = `User just posted a social media status: "${post.txt}". Reply as ${char.name}. Keep it short and casual.`;
+                const reply = await callAI("Comment on this.", sys, false); // Disable segment
+                
+                if(reply && reply !== "Err" && reply !== "設定 API"){
+                    if(Math.random()>0.5) post.likes.push(char.name);
+                    post.comments.push({user: char.name, txt: reply});
+                    saveConfig();
+                    renderWxMoments();
+                }
+            }, 5000);
+        }
+        
+        function editSignature(){
+            if(curWxId === 'me' || !curWxId){
+                const s = prompt("修改簽名", config.userSignature);
+                if(s!==null){ config.userSignature=s; saveConfig(); document.getElementById('wx-me-sig').innerText=s; if(document.getElementById('wx-pf-sig')) document.getElementById('wx-pf-sig').innerText=s; }
+            }
+        }
+
+        // Auto Moments Simulation
+        setInterval(()=>{
+            if(config.aiKey && Math.random() > 0.98 && config.characters.length > 0) {
+                const char = config.characters[Math.floor(Math.random()*config.characters.length)];
+                const posts = ["今天天氣真好！", "分享一首好聽的歌。", "心情有點複雜...", "剛吃飽，好睏。", "有人要一起聽歌嗎？"];
+                const txt = posts[Math.floor(Math.random()*posts.length)];
+                
+                if(!config.moments) config.moments = [];
+                config.moments.push({
+                    id: 'm'+Date.now(),
+                    ownerId: char.id,
+                    txt: txt,
+                    imgs: [],
+                    time: Date.now(),
+                    likes: [],
+                    comments: []
+                });
+                saveConfig();
+                renderWxMoments();
+            }
+        }, 15000);
+
+        var tag=document.createElement('script'); tag.src="https://www.youtube.com/iframe_api"; document.head.appendChild(tag);
+        function onYouTubeIframeAPIReady(){ 
+            ytPlayer=new YT.Player('yt-hidden',{height:'0',width:'0',events:{
+                'onStateChange':e=>{
+                    if(e.data===1) { document.getElementById('fp-cover').classList.remove('loading'); document.getElementById('mp-cover').classList.remove('loading'); }
+                    if(e.data===0) playNext();
+                }
+            }}); 
+        }
+        audio.onplaying = () => { document.getElementById('fp-cover').classList.remove('loading'); document.getElementById('mp-cover').classList.remove('loading'); };
+        audio.onended=playNext;
+        function seek(e){
+            const p = e.offsetX / document.getElementById('prog-bg').clientWidth;
+            if(queue[curIdx].type==='yt' && ytPlayer) ytPlayer.seekTo(p*ytPlayer.getDuration());
+            else if(audio.duration) audio.currentTime = p*audio.duration;
+        }
+        audio.ontimeupdate = ()=>{ if(audio.duration) document.getElementById('prog-bar').style.width=(audio.currentTime/audio.duration*100)+'%'; }
+        
+        function switchTab(i,t){ document.querySelectorAll('.m-tab').forEach((e,x)=>e.classList.toggle('active',x===i)); document.querySelectorAll('.m-content').forEach((e,x)=>e.classList.toggle('active',x===i)); }
+
+        // Keyboard Handler for Mobile
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const height = window.visualViewport.height;
+                const offset = window.innerHeight - height;
+                
+                const chatBar = document.getElementById('wx-input-bar');
+                const stickerPanel = document.getElementById('wx-sticker-panel');
+                const commentPopup = document.getElementById('comment-popup');
+
+                if (offset > 0) {
+                    if(chatBar && chatBar.style.display !== 'none') chatBar.style.bottom = offset + 'px';
+                    if(stickerPanel) stickerPanel.style.transform = `translateY(0)`; 
+                    if(commentPopup && commentPopup.classList.contains('show')) commentPopup.style.bottom = offset + 'px';
+                } else {
+                    if(chatBar) chatBar.style.bottom = '0px';
+                    if(commentPopup) commentPopup.style.bottom = '0px';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
