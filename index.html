@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1c1c1e">
     <meta name="format-detection" content="telephone=no">
-    <link rel="apple-touch-icon" href="https://i.pravatar.cc/150?img=11"> <title>Mizuiro OS - Final</title>
+    <link rel="apple-touch-icon" href="https://i.pravatar.cc/150?img=11">
+    
+    <title>Mizuiro OS - Final Fixed V3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
     <style>
@@ -78,7 +80,10 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.8);
             cursor: pointer;
         }
-        .api-status { font-size: 10px; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 10px; transition: 0.3s; }
+        /* Req 5: Light Mode Status Bar Color */
+        body.light-mode .status-bar { color: #000; text-shadow: none; }
+
+        .api-status { font-size: 10px; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 10px; transition: 0.3s; color: #fff; }
         .api-status.error { background: rgba(255, 59, 48, 0.4); border: 1px solid #ff3b30; }
         .api-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; transition: background 0.3s; }
         .api-dot.on { background: #34c759; }
@@ -95,6 +100,7 @@
             opacity: 0.6; transition: 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.5);
         }
         .home-indicator-area:active .home-indicator { background: var(--primary); transform: scale(0.95); opacity: 1; }
+        body.light-mode .home-indicator { background: #000; }
 
         .app-view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -220,7 +226,7 @@
         }
         .mc-send-btn:active { transform: scale(0.9); opacity: 0.7; }
 
-        /* Req 1: Music Typing Indicator */
+        /* Music Typing Indicator */
         .mc-typing {
             font-size: 12px; color: rgba(255,255,255,0.6); margin-left: 10px; margin-bottom: 10px;
             display: none; animation: breathe 1s infinite;
@@ -280,17 +286,25 @@
         .wx-bubble-row { display: flex; gap: 10px; cursor: pointer; }
         .wx-bubble-row.me { flex-direction: row-reverse; }
         .wx-bubble-av { width: 36px; height: 36px; border-radius: 4px; background: #ccc; background-size: cover; flex-shrink: 0;}
-        .wx-bubble-content { background: var(--wx-card); color:var(--text-main); padding: 10px; border-radius: 4px; max-width: 70%; font-size: 15px; line-height: 1.4; position: relative; border: 1px solid var(--border); overflow: hidden; min-width: 40px; }
+        
+        /* Req 2: Fix Bubble Quote Size */
+        .wx-bubble-content { 
+            background: var(--wx-card); color:var(--text-main); padding: 10px; 
+            border-radius: 4px; max-width: 70%; font-size: 15px; 
+            line-height: 1.4; position: relative; border: 1px solid var(--border); 
+            overflow: hidden; min-width: 40px; 
+            height: auto; 
+            word-wrap: break-word; /* Ensure wrapping */
+        }
         .wx-bubble-row.me .wx-bubble-content { background: var(--msg-me); color: #000; border-color: transparent; }
         
-        /* Req 3: Quote Box Resize Fix - Word Break and Normal Whitespace */
         .wx-quote-box {
             font-size: 12px; color: #888; background: rgba(0,0,0,0.1); padding: 4px 8px; border-radius: 4px;
             margin-bottom: 6px; border-left: 2px solid var(--text-sub); 
             display: block; width: 100%;
-            white-space: normal; /* Allow text wrapping */
-            word-break: break-all; /* Break long words */
-            height: auto; /* Auto expand */
+            white-space: normal; /* Fix: Allow wrap */
+            word-break: break-word; /* Fix: Break words correctly */
+            height: auto; 
         }
         .wx-bubble-row.me .wx-quote-box { background: rgba(255,255,255,0.3); color: rgba(0,0,0,0.6); border-color: rgba(0,0,0,0.3); }
 
@@ -378,7 +392,7 @@
         .wx-c-name { color: var(--primary); font-weight: 500; cursor: pointer;}
         .wx-c-txt { color: var(--text-main); word-break: break-all; }
 
-        /* Comment Popup */
+        /* Comment Popup - Req 4: Fix visibility leak */
         .comment-popup { 
             position: fixed; 
             bottom: 0; left: 0; width: 100%; 
@@ -388,8 +402,9 @@
             align-items: center; 
             padding-bottom: max(20px, var(--safe-bottom)); 
             transform: translateY(100%);
+            visibility: hidden; /* Fix */
         }
-        .comment-popup.show { transform: translateY(0); }
+        .comment-popup.show { transform: translateY(0); visibility: visible; }
         .comment-backdrop {
             position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1900;
             display: none;
@@ -397,7 +412,7 @@
         .comment-backdrop.show { display: block; }
 
         #hidden-file-input { display: none; }
-        #sticker-file-input { display: none; } /* Extra input for sticker image add */
+        #sticker-file-input { display: none; }
 
         /* Sticker Panel */
         .sticker-panel {
@@ -435,14 +450,13 @@
         .range-wrap { display: flex; align-items: center; gap: 10px; width: 100%; }
         .range-wrap input { flex: 1; }
         
-        /* Gallery Overlay - Req 4: Fix Safe Area for Image List */
+        /* Gallery Overlay */
         .gallery-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-color); z-index: 3000; display: none; flex-direction: column; 
-            padding-top: 0; /* Header handles safe top */
+            padding-top: 0; 
         }
         .gallery-overlay.show { display: flex; }
-        /* Add padding bottom so last images are not hidden by home bar */
         .img-grid-view { 
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 10px; 
             overflow-y: auto; flex: 1; 
@@ -979,6 +993,8 @@
         let pubImgs = []; 
         
         let pendingQuote = null; 
+        let initialPinchDist = 0;
+        let initialScale = 1;
 
         const req=indexedDB.open("Mizuiro_V27", 1);
         req.onupgradeneeded=e=>{ e.target.result.createObjectStore('songs',{keyPath:'id', autoIncrement:true}); };
@@ -1065,11 +1081,45 @@
             cropCtx.drawImage(cropImg, cx, cy, w, h);
         }
         cropCanvas.addEventListener('wheel', e=>{ e.preventDefault(); const d=e.deltaY>0?0.9:1.1; cropScale*=d; drawCrop(); });
-        cropCanvas.addEventListener('mousedown', e=>{isDragging=true; startX=e.offsetX-cropX; startY=e.offsetY-cropY;});
-        cropCanvas.addEventListener('mousemove', e=>{if(isDragging){cropX=e.offsetX-startX; cropY=e.offsetY-startY; drawCrop();}});
+        
+        // Mobile Pinch Zoom Logic
+        cropCanvas.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                e.preventDefault(); 
+                isDragging = false; 
+                initialPinchDist = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+                initialScale = cropScale;
+            } else if (e.touches.length === 1) {
+                isDragging = true;
+                startX = e.touches[0].clientX - cropX;
+                startY = e.touches[0].clientY - cropY;
+            }
+        });
+
+        cropCanvas.addEventListener('touchmove', e => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const dist = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+                if (initialPinchDist > 0) {
+                    const zoom = dist / initialPinchDist;
+                    cropScale = initialScale * zoom;
+                    drawCrop();
+                }
+            } else if (isDragging && e.touches.length === 1) {
+                e.preventDefault();
+                cropX = e.touches[0].clientX - startX;
+                cropY = e.touches[0].clientY - startY;
+                drawCrop();
+            }
+        });
+
         cropCanvas.addEventListener('mouseup', ()=>isDragging=false);
-        cropCanvas.addEventListener('touchstart', e=>{isDragging=true; startX=e.touches[0].clientX-cropX; startY=e.touches[0].clientY-cropY;});
-        cropCanvas.addEventListener('touchmove', e=>{if(isDragging){e.preventDefault(); cropX=e.touches[0].clientX-startX; cropY=e.touches[0].clientY-startY; drawCrop();}});
         cropCanvas.addEventListener('touchend', ()=>isDragging=false);
 
         function closeCropper(){ document.getElementById('cropper-view').style.display='none'; }
@@ -1407,7 +1457,6 @@
         async function callAI(p, sysPrompt, allowSegment=true){
             if(!config.aiUrl || !config.aiKey) return "設定 API";
             try{
-                // Req 3: Lovemo Style Segmented Response
                 let instructions = sysPrompt || '';
                 if(allowSegment){
                     instructions += ` You are chatting in a messaging app. Please provide your response in short, segmented bubbles to simulate a real person typing. Use '|||' to separate each segment/bubble. Do NOT use asterisks (*) for actions or expressions unless it's a significant physical interaction (e.g. *hugs*). Keep the tone natural and conversational.`;
@@ -1425,7 +1474,6 @@
             addMusicChat(t,true); inp.value=''; 
             const activeChar = config.characters.find(c=>c.id===config.activeCharId);
             
-            // Req 1: Music Typing Indicator
             document.getElementById('mc-typing-indicator').style.display='block';
             document.getElementById('mc-hist').scrollTop = document.getElementById('mc-hist').scrollHeight;
 
@@ -1659,7 +1707,6 @@
             if(!curWxId) return;
             const f=config.characters.find(x=>x.id===curWxId); if(!f.msgs) f.msgs=[];
             
-            // Handle new Sticker object type vs legacy string
             let content = s;
             let type = 'sticker';
             let meaning = '';
@@ -1673,7 +1720,6 @@
             f.msgs.push({me:true, txt:content, type:type, time: Date.now()}); 
             addWxBubble(content, true, f.av, type);
             
-            // Trigger AI response to sticker meaning
             if(meaning){
                 setTimeout(async () => {
                     const sys = `User sent a sticker meaning: "${meaning}". Reply naturally.`;
