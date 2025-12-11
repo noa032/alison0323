@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -49,22 +49,30 @@
             overflow: hidden;
         }
 
-        /* Phone Scaler */
-        #phone-scaler {
-            transform-origin: center center;
-            transition: transform 0.2s;
-            display: flex; justify-content: center; align-items: center;
-        }
+/* Phone Scaler */
+#phone-scaler {
+    transform-origin: center center;
+    transition: transform 0.2s;
+    display: flex; justify-content: center; align-items: center;
+    /* 新增：佔滿視口，但限制最大尺寸 */
+    width: 100vw; 
+    height: 100vh;
+}
 
-        .phone-body {
-            width: 375px; height: 812px;
-            background-color: #000;
-            border-radius: 0;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            display: flex; flex-direction: column;
-            position: relative; overflow: hidden;
-            border: 1px solid #222; 
-        }
+.phone-body {
+    width: 375px; 
+    /* 核心修改：移除固定高度，改為彈性高度，並限制最大高度以模擬手機 */
+    height: 100%; /* 讓它填滿 #phone-scaler 的高度 */
+    max-height: 812px; /* 模擬 iPhone X 的標準高，但允許更高 */
+    
+    background-color: #000;
+    border-radius: 0;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden;
+    border: 1px solid #222; 
+}
+/* ... (其他保留) */
 
         .screen {
             width: 100%; height: 100%; background: #222; position: relative; overflow: hidden;
@@ -727,15 +735,15 @@
                     </div>
 
                     <div id="wx-view-me" style="height:100%; display:none; flex-direction:column; overflow-y:auto;">
-                         <div style="position:relative;">
-                             <div class="wx-pf-banner" id="wx-me-banner" onclick="initCrop(this, 'wxBannerEdit', true)"></div>
-                             <div class="wx-pf-av" id="wx-me-av-big" onclick="initCrop(this, 'userAvatar')"></div>
-                         </div>
-                         <div class="wx-pf-name" id="wx-me-name-big" style="margin-top:50px;">User</div>
-                         <div class="wx-pf-id" id="wx-me-sig" onclick="editSignature()" style="cursor:pointer; margin-top:5px; color:var(--text-sub);">點擊設定簽名...</div>
-                         <div style="margin-top:20px; border-top:1px solid var(--border);"></div>
-                         <div class="wx-cell" onclick="openWxProfile('me')"><div><i class="fas fa-images" style="color:var(--primary); margin-right:10px;"></i> 我的相簿</div><i class="fas fa-chevron-right" style="color:var(--text-sub);"></i></div>
-                         <div class="wx-cell"><div><i class="fas fa-cog" style="color:var(--primary); margin-right:10px;"></i> 設定</div><i class="fas fa-chevron-right" style="color:var(--text-sub);"></i></div>
+                           <div style="position:relative;">
+                               <div class="wx-pf-banner" id="wx-me-banner" onclick="initCrop(this, 'wxBannerEdit', true)"></div>
+                               <div class="wx-pf-av" id="wx-me-av-big" onclick="initCrop(this, 'userAvatar')"></div>
+                           </div>
+                           <div class="wx-pf-name" id="wx-me-name-big" style="margin-top:50px;">User</div>
+                           <div class="wx-pf-id" id="wx-me-sig" onclick="editSignature()" style="cursor:pointer; margin-top:5px; color:var(--text-sub);">點擊設定簽名...</div>
+                           <div style="margin-top:20px; border-top:1px solid var(--border);"></div>
+                           <div class="wx-cell" onclick="openWxProfile('me')"><div><i class="fas fa-images" style="color:var(--primary); margin-right:10px;"></i> 我的相簿</div><i class="fas fa-chevron-right" style="color:var(--text-sub);"></i></div>
+                           <div class="wx-cell"><div><i class="fas fa-cog" style="color:var(--primary); margin-right:10px;"></i> 設定</div><i class="fas fa-chevron-right" style="color:var(--text-sub);"></i></div>
                     </div>
 
                     <div class="wx-tab-bar">
@@ -752,19 +760,19 @@
                         <div class="header-btn right" onclick="doPublish()"><div style="background:var(--wx-green); color:#fff; padding:4px 12px; border-radius:4px; font-size:14px;">發表</div></div>
                     </div>
                     <div style="padding:20px; background:var(--card-bg); flex:1;">
-                         <textarea id="wx-pub-txt" style="width:100%; height:100px; padding:0; background:transparent; border:none; color:var(--text-main); font-size:16px; resize:none;" placeholder="這一刻的想法..."></textarea>
-                         <div class="wx-pub-grid" id="wx-pub-grid">
-                            <div class="wx-pub-add" onclick="document.getElementById('pub-file-in').click()"><span>+</span></div>
-                         </div>
-                         <div style="margin-top:30px; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
-                             <div class="wx-cell" style="padding:15px 0;">
-                                 <div><i class="fas fa-map-marker-alt" style="margin-right:10px;"></i> <input class="wx-pub-input" id="wx-pub-loc" placeholder="所在位置" style="text-align:left; width:200px;"></div>
-                             </div>
-                             <div class="wx-cell" style="padding:15px 0; border-bottom:none;" onclick="openMentionSelector()">
-                                 <div><i class="fas fa-at" style="margin-right:10px;"></i> <span id="wx-pub-mention-txt">提醒誰看</span></div>
-                                 <i class="fas fa-chevron-right" style="font-size:12px; color:var(--text-sub);"></i>
-                             </div>
-                         </div>
+                           <textarea id="wx-pub-txt" style="width:100%; height:100px; padding:0; background:transparent; border:none; color:var(--text-main); font-size:16px; resize:none;" placeholder="這一刻的想法..."></textarea>
+                           <div class="wx-pub-grid" id="wx-pub-grid">
+                                <div class="wx-pub-add" onclick="document.getElementById('pub-file-in').click()"><span>+</span></div>
+                           </div>
+                           <div style="margin-top:30px; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+                                <div class="wx-cell" style="padding:15px 0;">
+                                    <div><i class="fas fa-map-marker-alt" style="margin-right:10px;"></i> <input class="wx-pub-input" id="wx-pub-loc" placeholder="所在位置" style="text-align:left; width:200px;"></div>
+                                </div>
+                                <div class="wx-cell" style="padding:15px 0; border-bottom:none;" onclick="openMentionSelector()">
+                                    <div><i class="fas fa-at" style="margin-right:10px;"></i> <span id="wx-pub-mention-txt">提醒誰看</span></div>
+                                    <i class="fas fa-chevron-right" style="font-size:12px; color:var(--text-sub);"></i>
+                                </div>
+                           </div>
                     </div>
                     <input type="file" id="pub-file-in" multiple accept="image/*" style="display:none;" onchange="handlePubImgs(this)">
                 </div>
@@ -1029,7 +1037,7 @@
             document.getElementById('bat-level').innerText = p + '%';
             const i = document.getElementById('bat-icon');
             i.className = b.charging ? "fas fa-bolt" : 
-                         (p>90?"fas fa-battery-full": p>60?"fas fa-battery-three-quarters": p>30?"fas fa-battery-half": p>10?"fas fa-battery-quarter":"fas fa-battery-empty");
+                             (p>90?"fas fa-battery-full": p>60?"fas fa-battery-three-quarters": p>30?"fas fa-battery-half": p>10?"fas fa-battery-quarter":"fas fa-battery-empty");
         }
 
         function scrollToTop(){
@@ -1080,9 +1088,26 @@
             const cy = (cropCanvas.height - h)/2 + cropY;
             cropCtx.drawImage(cropImg, cx, cy, w, h);
         }
+        
+        // --- Pinch Zoom & Dragging Logic (Req 1) ---
         cropCanvas.addEventListener('wheel', e=>{ e.preventDefault(); const d=e.deltaY>0?0.9:1.1; cropScale*=d; drawCrop(); });
         
-        // Mobile Pinch Zoom Logic
+        // Desktop Dragging for Pan
+        cropCanvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            startX = e.clientX - cropX;
+            startY = e.clientY - cropY;
+        });
+        cropCanvas.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            cropX = e.clientX - startX;
+            cropY = e.clientY - startY;
+            drawCrop();
+        });
+        cropCanvas.addEventListener('mouseup', ()=>isDragging=false);
+        cropCanvas.addEventListener('mouseout', ()=>isDragging=false); // Added mouseout for safety
+
+        // Mobile Pinch Zoom Logic (Req 1)
         cropCanvas.addEventListener('touchstart', e => {
             if (e.touches.length === 2) {
                 e.preventDefault(); 
@@ -1119,8 +1144,9 @@
             }
         });
 
-        cropCanvas.addEventListener('mouseup', ()=>isDragging=false);
         cropCanvas.addEventListener('touchend', ()=>isDragging=false);
+        // ---------------------------------------------
+
 
         function closeCropper(){ document.getElementById('cropper-view').style.display='none'; }
         
@@ -1154,8 +1180,8 @@
             else if(cropTargetKey==='charEdit') { document.getElementById('edit-c-av').style.backgroundImage=`url('${res}')`; document.getElementById('edit-c-av').dataset.temp=res; }
             else if(cropTargetKey==='wxBannerEdit') { 
                 if(cropIsMe) {
-                     config.userBanner = res; 
-                     document.getElementById('wx-me-banner').style.backgroundImage=`url('${res}')`;
+                    config.userBanner = res; 
+                    document.getElementById('wx-me-banner').style.backgroundImage=`url('${res}')`;
                 } else {
                     const char = config.characters.find(c=>c.id===curWxId);
                     if(char) { char.banner = res; saveConfig(); document.getElementById('wx-pf-banner').style.backgroundImage=`url('${res}')`; }
@@ -1252,12 +1278,32 @@
         function toggleTheme(){ config.darkMode=!config.darkMode; saveConfig(); }
         function updateThemeColor(c){ config.themeColor = c; saveConfig(); }
         function showToast(m){ const t=document.getElementById('toast-msg'); t.innerHTML=`<i class="fas fa-check"></i> ${m}`; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
-        
+      /* ... (保留原有程式碼) */
+
         function resizePhone(){ 
+            // 移除基於 812px 的縮放計算，讓 CSS 負責佈局
+            // 原有代碼：
+            /*
             const h=window.innerHeight; 
             document.getElementById('phone-scaler').style.transform=h<812?`scale(${h/812})`:'scale(1)'; 
+            */
+            
+            // 新邏輯：如果視窗寬度太窄，則進行縮放，保持手機寬度不變
+            const w = window.innerWidth;
+            const phoneW = 375;
+            const maxScale = w / phoneW;
+            
+            // 限制最大寬度為 375px，如果視窗太窄，則縮小整體
+            // 這裡將主要側重於寬度縮放以避免過寬，並取消對 812px 的硬性高度限制。
+            if (maxScale < 1) {
+                document.getElementById('phone-scaler').style.transform = `scale(${maxScale})`;
+            } else {
+                document.getElementById('phone-scaler').style.transform = 'scale(1)';
+            }
         }
         window.onresize=resizePhone; resizePhone();
+
+/* ... (保留原有程式碼) */
 
         // Characters
         function renderCharList(){
@@ -1766,6 +1812,7 @@
                     const e = prompt("輸入 Emoji 或文字");
                     if(e) { cat.items.push(e); saveConfig(); renderStickerGrid(idx); }
                 } else if(type === '2'){
+                    // 使用模態框來處理貼圖新增和含義輸入
                     document.getElementById('sticker-file-input').click();
                 }
             };
@@ -1786,25 +1833,39 @@
             });
         }
         
+        // Handling image sticker input and meaning prompt
+        let pendingStickerImage = null;
         function addStickerImage(input){
-            if(input.files && input.files[0]){
-                const r = new FileReader();
-                r.onload = e => {
-                    const meaning = prompt("這張貼圖代表什麼意思？(讓AI讀懂)");
-                    if(meaning){
-                        config.stickers[tempStickerGroupIdx].items.push({
-                            type: 'img',
-                            content: e.target.result,
-                            meaning: meaning
-                        });
-                        saveConfig();
-                        renderStickerGrid(tempStickerGroupIdx);
-                    }
-                };
-                r.readAsDataURL(input.files[0]);
-            }
-            input.value = '';
+             if(input.files && input.files[0]){
+                 const r = new FileReader();
+                 r.onload = e => {
+                     pendingStickerImage = e.target.result;
+                     document.getElementById('sticker-prompt-modal').style.display = 'flex';
+                     document.getElementById('sticker-prompt-input').value = '';
+                 };
+                 r.readAsDataURL(input.files[0]);
+             }
+             input.value = '';
         }
+        function closeStickerPrompt(){
+             document.getElementById('sticker-prompt-modal').style.display = 'none';
+             pendingStickerImage = null;
+        }
+        function confirmAddSticker(){
+             const meaning = document.getElementById('sticker-prompt-input').value.trim();
+             if(meaning && pendingStickerImage){
+                 config.stickers[tempStickerGroupIdx].items.push({
+                     type: 'img',
+                     content: pendingStickerImage,
+                     meaning: meaning
+                 });
+                 saveConfig();
+                 renderStickerGrid(tempStickerGroupIdx);
+                 showToast("貼圖新增成功");
+             }
+             closeStickerPrompt();
+        }
+
 
         // Chat Style Settings
         let curChatStyle = { bg:'', bubbleMe:'var(--msg-me)', bubbleMeOp:1, bubbleOther:'var(--wx-card)', bubbleOtherOp:1, textMe:'#000000', textOther:'#ffffff', fontSize:15 };
