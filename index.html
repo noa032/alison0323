@@ -1500,65 +1500,21 @@
         function updateMusicOpacity(v){ config.musicOpacity=v/100; saveConfig(); }
         function resetMusicStyle(){ config.musicBg=''; config.musicOpacity=0.2; saveConfig(); showToast("已重置"); }
 
-        // ... (在 applyConfig 和 resizePhone 之間)
-
-async function callAI(p, sysPrompt, allowSegment=true){
-    // 檢查 API 設定是否完整
-    if(!config.aiUrl || !config.aiKey) return "請設定 API 密鑰和端點。"; 
-    
-    let instructions = sysPrompt || '';
-    if(allowSegment){
-        instructions += ` You are chatting in a messaging app. Please provide your response in short, segmented bubbles to simulate a real person typing. Use '|||' to separate each segment/bubble. Do NOT use asterisks (*) for actions or expressions unless it's a significant physical interaction (e.g. *hugs*). Keep the tone natural and conversational.`;
-    } else {
-        instructions += ` You are commenting on a social media post. Do NOT use segmented bubbles. Write one single, complete comment block. Do NOT use '|||'.`;
-    }
-    
-    const messages = [{role:"system",content:instructions}, {role:"user",content:p}];
-    const endpoint = config.aiUrl + '/chat/completions';
-
-    try{
-        const response = await fetch(endpoint, { 
-            method: 'POST', 
-            headers: {
-                'Content-Type': 'application/json',
-                // 使用 DeepSeek 的授權格式 (與 OpenAI 相同)
-                'Authorization': `Bearer ${config.aiKey}`
-            }, 
-            body: JSON.stringify({
-                // 使用 config.aiModel，確保您在設定頁面填寫了 deepseek-chat 等模型名稱
-                model: config.aiModel, 
-                messages: messages
-                // temperature: 0.7, // 可選
-            }) 
-        });
-
-        // 檢查 HTTP 狀態碼 (非 200 OK)
-        if (!response.ok) {
-            const status = response.status;
-            let errorMsg = `API 錯誤：HTTP ${status}`;
-            try {
-                const errorData = await response.json();
-                errorMsg = errorData.error ? `API 錯誤: ${errorData.error.message}` : `API 錯誤：HTTP ${status} (${response.statusText})`;
-            } catch {
-                // 如果無法解析 JSON (例如 CORS 錯誤通常沒有回應體)
-                if (status === 0) {
-                     return "連線失敗 (CORS/網路錯誤)。請檢查瀏覽器控制台。";
+        async function callAI(p, sysPrompt, allowSegment=true){
+            if(!config.aiUrl || !config.aiKey) return "設定 API";
+            try{
+                let instructions = sysPrompt || '';
+                if(allowSegment){
+                    instructions += ` You are chatting in a messaging app. Please provide your response in short, segmented bubbles to simulate a real person typing. Use '|||' to separate each segment/bubble. Do NOT use asterisks (*) for actions or expressions unless it's a significant physical interaction (e.g. *hugs*). Keep the tone natural and conversational.`;
+                } else {
+                    instructions += ` You are commenting on a social media post. Do NOT use segmented bubbles. Write one single, complete comment block. Do NOT use '|||'.`;
                 }
-            }
-            console.error("DeepSeek API Call Failed:", errorMsg);
-            return errorMsg; 
+                
+                const msgs = [{role:"system",content:instructions}, {role:"user",content:p}];
+                const r=await fetch(config.aiUrl+'/chat/completions',{ method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${config.aiKey}`}, body:JSON.stringify({model:config.aiModel, messages:msgs}) });
+                const d=await r.json(); return d.choices[0].message.content;
+            }catch(e){ return "Err"; }
         }
-
-        const data = await response.json();
-        // 確保返回的結構與 DeepSeek (及 OpenAI 規範) 一致
-        return data.choices[0].message.content;
-
-    } catch(e) { 
-        console.error("Fetch or Processing Error:", e);
-        // 這通常是網路錯誤 (如 DNS 失敗) 或 CORS 錯誤被瀏覽器主動拋出的錯誤
-        return "連線失敗 (網路或 CORS)。請確認是否需要代理服務。"; 
-    }
-
         async function sendMusicChat(){
             const inp=document.getElementById('mc-in'); const t=inp.value.trim(); if(!t)return;
             addMusicChat(t,true); inp.value=''; 
