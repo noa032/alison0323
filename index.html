@@ -440,7 +440,6 @@
         .sticker-panel {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 320px; 
             background: var(--wx-bg); z-index: 55; transform: translateY(100%); transition: 0.3s;
-            display: flex; flex-direction: column; border-top: 1px solid var(--border);
             padding-bottom: var(--safe-bottom); 
         }
         .sticker-panel.show { transform: translateY(0); }
@@ -1304,13 +1303,14 @@
             const scaleW = w / phoneW;
             const scaleH = h / phoneH;
             
-            // 選擇較小的縮放比例來確保整個手機模擬器都能放入視窗
+            // 選擇較小的縮放比例，以確保整個手機模擬器都能放入視窗
             const scale = Math.min(scaleW, scaleH);
             
             // 如果視窗寬度或高度小於手機標準尺寸，則進行縮放，否則維持 1
-            if (scale < 1 || w > 812) { 
+            if (scale < 1) {
                 document.getElementById('phone-scaler').style.transform = `scale(${scale})`;
             } else {
+                // 如果視窗夠大，只限制最大尺寸為 100%，不放大
                 document.getElementById('phone-scaler').style.transform = 'scale(1)';
             }
         }
