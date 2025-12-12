@@ -288,9 +288,11 @@
         .wx-room.show { transform:translateX(0); }
         .wx-room .header { background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); color: #fff;}
         
-        .wx-hist { 
+       /* 約 569 行 - 確保聊天記錄的底部空間 */
+.wx-hist { 
     flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:15px; 
-    padding-bottom: calc(70px + var(--safe-bottom) + 30px); /* 增加额外的 30px 餘裕，避免鍵盤/Bar 遮擋 */
+    /* 修正：預留給輸入欄 (約 70px) + 貼圖面板 (320px) + 安全區域 */
+    padding-bottom: calc(70px + var(--safe-bottom) + 320px); 
 }
         .wx-bubble-row { display: flex; gap: 10px; cursor: pointer; }
         .wx-bubble-row.me { flex-direction: row-reverse; }
@@ -1751,6 +1753,7 @@
         }
         
         // 約 1283 行
+// 約 1283 行
 function toggleStickers(){ 
     const panel = document.getElementById('wx-sticker-panel');
     const overlay = document.getElementById('sticker-overlay');
@@ -1759,26 +1762,14 @@ function toggleStickers(){
     panel.classList.toggle('show'); 
     overlay.classList.toggle('show');
     
-    // **修改:** 統一控制輸入欄底部的位移
-    if(panel.classList.contains('show')) {
-        // 貼圖面板高度 320px 減去安全區域高度 (約 34px)
-        // 為了簡單和穩定，我們使用 CSS 變數進行計算
-        const safeBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom').replace(/[^\d.]/g, '')) || 34;
-        const panelHeight = 320; // CSS 定義的高度
-        const barHeight = bar.offsetHeight; // 輸入欄自身的高度 (約 56px + 安全區)
-        
-        // 輸入欄位於貼圖面板上方
-        // 這裡的邏輯是將 bar.bottom 設為 0，並讓 panel 覆蓋它 (如果它在底部)
-        // 由於 panel 定位在 bottom: 0，且高度為 320px，我們只需將 bar 的 transform 調整為 0
-        // **刪除 bar.style.bottom = "320px";**
-    } else {
-        bar.style.bottom = "0"; 
-    }
-    
-    // **新增:** 在切換後確保捲動到最底
+    // 修正：當貼圖面板出現時，如果沒有鍵盤，輸入欄的 bottom 應由 CSS 控制（bottom: 0）
+    // 只有在鍵盤彈出時才由 visualViewport 監聽器控制。
+    // 這裡主要確保在切換後，聊天記錄能強制捲動到底部。
+
+    // **修正 3：強制捲動到底部**
     setTimeout(() => {
         const hist = document.getElementById('wx-room-hist');
-        hist.scrollTop = hist.scrollHeight;
+        if (hist) hist.scrollTop = hist.scrollHeight;
     }, 350); // 延遲執行確保動畫完成
     
     renderStickers(); 
@@ -2322,25 +2313,44 @@ function removePubImg(index, elementToRemove) {
         function switchTab(i,t){ document.querySelectorAll('.m-tab').forEach((e,x)=>e.classList.toggle('active',x===i)); document.querySelectorAll('.m-content').forEach((e,x)=>e.classList.toggle('active',x===i)); }
 
         // Keyboard Handler for Mobile
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
-                const height = window.visualViewport.height;
-                const offset = window.innerHeight - height;
-                
-                const chatBar = document.getElementById('wx-input-bar');
-                const stickerPanel = document.getElementById('wx-sticker-panel');
-                const commentPopup = document.getElementById('comment-popup');
+        // 約 2124 行
+// Keyboard Handler for Mobile
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+        const height = window.visualViewport.height;
+        const offset = window.innerHeight - height;
+        
+        const chatBar = document.getElementById('wx-input-bar');
+        const stickerPanel = document.getElementById('wx-sticker-panel');
+        const commentPopup = document.getElementById('comment-popup');
 
-                if (offset > 0) {
-                    if(chatBar && chatBar.style.display !== 'none') chatBar.style.bottom = offset + 'px';
-                    if(stickerPanel) stickerPanel.style.transform = `translateY(0)`; 
-                    if(commentPopup && commentPopup.classList.contains('show')) commentPopup.style.bottom = offset + 'px';
-                } else {
-                    if(chatBar) chatBar.style.bottom = '0px';
-                    if(commentPopup) commentPopup.style.bottom = '0px';
-                }
-            });
+        if (offset > 0) {
+            // 鍵盤彈出：將輸入欄位移到鍵盤頂部
+            if(chatBar) chatBar.style.bottom = offset + 'px';
+            // 貼圖面板：如果鍵盤彈出，貼圖面板應被隱藏/收起，或者保持在底層，但這裡您的邏輯是將其位移到 0
+            if(stickerPanel && stickerPanel.classList.contains('show')) stickerPanel.style.transform = `translateY(${offset}px)`; 
+            if(commentPopup && commentPopup.classList.contains('show')) commentPopup.style.bottom = offset + 'px';
+            
+            // **新增：當鍵盤彈出時，強制滾動到底部，將內容推到鍵盤上方**
+            if (curWxId) {
+                setTimeout(() => {
+                    const hist = document.getElementById('wx-room-hist');
+                    if (hist) hist.scrollTop = hist.scrollHeight;
+                }, 50); 
+            }
+            
+        } else {
+            // 鍵盤收起：清除內聯樣式，確保輸入欄回到 CSS 定位的 bottom: 0
+            if(chatBar) chatBar.style.bottom = ''; // 清除內聯 bottom
+            if(stickerPanel && stickerPanel.classList.contains('show')) {
+                 // 鍵盤收起時，貼圖面板回到 CSS 定義的位置 (transformY(0))
+                 stickerPanel.style.transform = `translateY(0)`;
+            }
+            if(commentPopup) commentPopup.style.bottom = '';
         }
+    });
+}
+        
     </script>
 </body>
 </html>
