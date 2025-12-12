@@ -49,22 +49,30 @@
             overflow: hidden;
         }
 
-        /* Phone Scaler */
-        #phone-scaler {
-            transform-origin: center center;
-            transition: transform 0.2s;
-            display: flex; justify-content: center; align-items: center;
-        }
+/* Phone Scaler */
+#phone-scaler {
+    transform-origin: center center;
+    transition: transform 0.2s;
+    display: flex; justify-content: center; align-items: center;
+    /* 新增：佔滿視口，但限制最大尺寸 */
+    width: 100vw; 
+    height: 100vh;
+}
 
-        .phone-body {
-            width: 375px; height: 812px;
-            background-color: #000;
-            border-radius: 0;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            display: flex; flex-direction: column;
-            position: relative; overflow: hidden;
-            border: 1px solid #222; 
-        }
+.phone-body {
+    width: 375px; 
+    /* 核心修改：移除固定高度，改為彈性高度，並限制最大高度以模擬手機 */
+    height: 100%; /* 讓它填滿 #phone-scaler 的高度 */
+    max-height: 812px; /* 模擬 iPhone X 的標準高，但允許更高 */
+    
+    background-color: #000;
+    border-radius: 0;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden;
+    border: 1px solid #222; 
+}
+/* ... (其他保留) */
 
         .screen {
             width: 100%; height: 100%; background: #222; position: relative; overflow: hidden;
@@ -1270,12 +1278,32 @@
         function toggleTheme(){ config.darkMode=!config.darkMode; saveConfig(); }
         function updateThemeColor(c){ config.themeColor = c; saveConfig(); }
         function showToast(m){ const t=document.getElementById('toast-msg'); t.innerHTML=`<i class="fas fa-check"></i> ${m}`; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
-        
+      /* ... (保留原有程式碼) */
+
         function resizePhone(){ 
+            // 移除基於 812px 的縮放計算，讓 CSS 負責佈局
+            // 原有代碼：
+            /*
             const h=window.innerHeight; 
             document.getElementById('phone-scaler').style.transform=h<812?`scale(${h/812})`:'scale(1)'; 
+            */
+            
+            // 新邏輯：如果視窗寬度太窄，則進行縮放，保持手機寬度不變
+            const w = window.innerWidth;
+            const phoneW = 375;
+            const maxScale = w / phoneW;
+            
+            // 限制最大寬度為 375px，如果視窗太窄，則縮小整體
+            // 這裡將主要側重於寬度縮放以避免過寬，並取消對 812px 的硬性高度限制。
+            if (maxScale < 1) {
+                document.getElementById('phone-scaler').style.transform = `scale(${maxScale})`;
+            } else {
+                document.getElementById('phone-scaler').style.transform = 'scale(1)';
+            }
         }
         window.onresize=resizePhone; resizePhone();
+
+/* ... (保留原有程式碼) */
 
         // Characters
         function renderCharList(){
