@@ -1501,52 +1501,19 @@
         function resetMusicStyle(){ config.musicBg=''; config.musicOpacity=0.2; saveConfig(); showToast("已重置"); }
 
         async function callAI(p, sysPrompt, allowSegment=true){
-    // 檢查 API 設定是否完整
-    if(!config.aiUrl || !config.aiKey) return "請設定 API 密鑰和端點。"; 
-    
-    try{
-        let instructions = sysPrompt || '';
-        // 確保 instructions 包含 DeepSeek 的上下文提示 (保留您的分段邏輯)
-        if(allowSegment){
-            instructions += ` You are chatting in a messaging app. Please provide your response in short, segmented bubbles to simulate a real person typing. Use '|||' to separate each segment/bubble. Do NOT use asterisks (*) for actions or expressions unless it's a significant physical interaction (e.g. *hugs*). Keep the tone natural and conversational.`;
-        } else {
-            instructions += ` You are commenting on a social media post. Do NOT use segmented bubbles. Write one single, complete comment block. Do NOT use '|||'.`;
-        }
-        
-        const messages = [{role:"system",content:instructions}, {role:"user",content:p}];
-        
-        // --- DeepSeek 接入的關鍵點：使用配置的 URL 和 Model ---
-        const endpoint = config.aiUrl + '/chat/completions';
-
-        const response = await fetch(endpoint, { 
-            method: 'POST', 
-            headers: {
-                'Content-Type': 'application/json',
-                // 使用 DeepSeek 的授權格式
-                'Authorization': `Bearer ${config.aiKey}`
-            }, 
-            body: JSON.stringify({
-                model: config.aiModel, // 使用 deepseek-chat 或 deepseek-coder
-                messages: messages
-                // temperature: 0.7, // 可選，根據需求調整
-            }) 
-        });
-
-        // 檢查 HTTP 狀態碼
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("API Error:", errorData);
-            return `API 錯誤：${response.status} (${errorData.message || 'Unknown Error'})`;
-        }
-
-        const data = await response.json();
-        // 確保返回的結構與 DeepSeek (及 OpenAI 規範) 一致
-        return data.choices[0].message.content;
-    }catch(e){ 
-        console.error("Fetch or Processing Error:", e);
-        return "連線或處理回應時發生錯誤。"; 
-    }
-}
+            if(!config.aiUrl || !config.aiKey) return "設定 API";
+            try{
+                let instructions = sysPrompt || '';
+                if(allowSegment){
+                    instructions += ` You are chatting in a messaging app. Please provide your response in short, segmented bubbles to simulate a real person typing. Use '|||' to separate each segment/bubble. Do NOT use asterisks (*) for actions or expressions unless it's a significant physical interaction (e.g. *hugs*). Keep the tone natural and conversational.`;
+                } else {
+                    instructions += ` You are commenting on a social media post. Do NOT use segmented bubbles. Write one single, complete comment block. Do NOT use '|||'.`;
+                }
+                
+                const msgs = [{role:"system",content:instructions}, {role:"user",content:p}];
+                const r=await fetch(config.aiUrl+'/chat/completions',{ method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${config.aiKey}`}, body:JSON.stringify({model:config.aiModel, messages:msgs}) });
+                const d=await r.json(); return d.choices[0].message.content;
+            }catch(e){ return "Err"; }
         }
         async function sendMusicChat(){
             const inp=document.getElementById('mc-in'); const t=inp.value.trim(); if(!t)return;
